@@ -40,6 +40,7 @@ public class SkyblockUsdMod implements net.fabricmc.api.ModInitializer {
 
     @Override
     public void onInitialize() {
+        ModConfig.load();
         LOGGER.info("Coins-to-Money initializing for Minecraft 26.1.2+");
         CookiePriceFetcher.startPeriodicUpdates(5);
     }
@@ -107,7 +108,10 @@ public class SkyblockUsdMod implements net.fabricmc.api.ModInitializer {
         if (!Double.isFinite(coins) || coins < 0 || !Double.isFinite(CookiePriceFetcher.coinsPerUsd) || CookiePriceFetcher.coinsPerUsd <= 0) {
             throw new IllegalArgumentException("Invalid conversion rate or coin amount");
         }
-        return NumberFormat.getCurrencyInstance(Locale.US).format(coins / CookiePriceFetcher.coinsPerUsd);
+        NumberFormat format = NumberFormat.getCurrencyInstance(Locale.US);
+        format.setMinimumFractionDigits(ModConfig.decimalPlaces);
+        format.setMaximumFractionDigits(ModConfig.decimalPlaces);
+        return format.format(coins / CookiePriceFetcher.coinsPerUsd);
     }
 
     public static Component replaceCoinsComponent(Component original) {
@@ -140,6 +144,7 @@ public class SkyblockUsdMod implements net.fabricmc.api.ModInitializer {
                 lastEnd = replacement.end();
             }
         }
+
         if (filtered.isEmpty()) return original;
 
         MutableComponent rebuilt = Component.empty().withStyle(original.getStyle());
@@ -153,22 +158,53 @@ public class SkyblockUsdMod implements net.fabricmc.api.ModInitializer {
         return rebuilt;
     }
 
+    /**
+     * Handles scoreboard entries whose visible text is split between the team/owner text and
+     * the scoreboard's separate numeric value. For example Hypixel can render
+     * "Purse: 7,021,5" followed by a separate score of "56".
+     */
+    public static Component replaceScoreboardEntry(Component ownerName, int score) {
+        if (!enabled || ownerName == null) return ownerName;
+
+        String prefix = ownerName.getString();
+        String lower = prefix.toLowerCase(Locale.ROOT);
+        boolean coinContext = lower.contains("purse") || lower.contains("piggy") ||
+                lower.contains("balance") || lower.contains("coins:");
+        if (!coinContext) return ownerName;
+
+        MutableComponent combined = Component.empty();
+        combined.append(ownerName.copy());
+        combined.append(Component.literal(Integer.toString(score)).withStyle(net.minecraft.ChatFormatting.GOLD));
+        return replaceCoinsComponent(combined);
+    }
+
+    public static boolean isScoreboardCoinEntry(Component ownerName) {
+        if (!enabled || ownerName == null) return false;
+        String lower = ownerName.getString().toLowerCase(Locale.ROOT);
+        return lower.contains("purse") || lower.contains("piggy") || lower.contains("balance") || lower.contains("coins:");
+    }
+
     private static void collectScoreboardNumbers(CharSequence text, List<Replacement> output) {
         Matcher matcher = SCOREBOARD_PATTERN.matcher(text);
-        while (matcher.find()) addNumericReplacement(matcher, 1, 2, output);
+        while (matcher.find()) {
+            try {
+                int start = matcher.start(1);
+                int end = matcher.group(2) != null ? matcher.end(2) : matcher.end(1);
+                output.add(new Replacement(start, end, formatUsd(parseCoins(matcher.group(1), matcher.group(2)))));
+            } catch (RuntimeException ignored) {
+            }
+        }
     }
 
     private static void collectCoinWordNumbers(CharSequence text, List<Replacement> output) {
         Matcher matcher = COIN_WORD_PATTERN.matcher(text);
-        while (matcher.find()) addNumericReplacement(matcher, 1, 2, output);
-    }
-
-    private static void addNumericReplacement(Matcher matcher, int numberGroup, int suffixGroup, List<Replacement> output) {
-        try {
-            int start = matcher.start(numberGroup);
-            int end = matcher.group(suffixGroup) != null ? matcher.end(suffixGroup) : matcher.end(numberGroup);
-            output.add(new Replacement(start, end, formatUsd(parseCoins(matcher.group(numberGroup), matcher.group(suffixGroup)))));
-        } catch (RuntimeException ignored) {
+        while (matcher.find()) {
+            try {
+                int start = matcher.start(1);
+                int end = matcher.group(2) != null ? matcher.end(2) : matcher.end(1);
+                output.add(new Replacement(start, end, formatUsd(parseCoins(matcher.group(1), matcher.group(2)))));
+            } catch (RuntimeException ignored) {
+            }
         }
     }
 
