@@ -43,7 +43,6 @@ public class SkyblockUsdMod implements ModInitializer {
 
     public static String replaceCoinsString(String text) {
         if (text == null || text.isEmpty()) return text;
-
         String result = replaceMatches(text, SCOREBOARD_PATTERN, 1, 2, 3, false);
         result = replaceMatches(result, COIN_WORD_PATTERN, 0, 1, 2, true);
         return replaceBazaarPairs(result);
@@ -112,10 +111,9 @@ public class SkyblockUsdMod implements ModInitializer {
     }
 
     /**
-     * Preserves the effective style of every text segment. When a coin value
-     * spans multiple styled segments, the replacement gets the style of the
-     * first segment containing that value. Thus Bazaar prices stay red/green,
-     * while scoreboard Purse/Piggy values stay gold.
+     * Rebuilds the Text tree while retaining the effective style of each
+     * original segment. Bazaar buy/sell values are replaced independently,
+     * so their original red/green colors remain independent as well.
      */
     public static Text replaceCoinsText(Text original) {
         if (original == null) return null;
@@ -133,16 +131,15 @@ public class SkyblockUsdMod implements ModInitializer {
 
         List<Replacement> replacements = new ArrayList<>();
         Matcher matcher = SCOREBOARD_PATTERN.matcher(all);
-        collectReplacements(matcher, replacements);
+        collectScoreboardReplacements(matcher, replacements);
         matcher = COIN_WORD_PATTERN.matcher(all);
-        collectReplacements(matcher, replacements);
+        collectCoinWordReplacements(matcher, replacements);
         matcher = BAZAAR_PAIR_PATTERN.matcher(all);
         collectBazaarReplacements(matcher, replacements);
 
         replacements.sort((a, b) -> Integer.compare(a.start(), b.start()));
         if (replacements.isEmpty()) return original;
 
-        // Drop overlapping matches so a scoreboard/coin match isn't converted twice.
         List<Replacement> filtered = new ArrayList<>();
         int lastEnd = -1;
         for (Replacement replacement : replacements) {
@@ -163,23 +160,22 @@ public class SkyblockUsdMod implements ModInitializer {
         return rebuilt;
     }
 
-    private static void collectReplacements(Matcher matcher, List<Replacement> output) {
+    private static void collectScoreboardReplacements(Matcher matcher, List<Replacement> output) {
         while (matcher.find()) {
-            String suffix = matcher.groupCount() >= 3 ? matcher.group(matcher.groupCount()) : null;
-            // SCOREBOARD and COIN_WORD both expose number at group 2/1 respectively;
-            // identify the pattern by its first group's shape.
             try {
-                if (matcher.groupCount() == 3) {
-                    String number = matcher.group(2);
-                    String suffixValue = matcher.group(3);
-                    String usd = formatUsd(parseCoins(number, suffixValue));
-                    String replacement = matcher.pattern() == SCOREBOARD_PATTERN
-                            ? matcher.group(1) + usd : usd;
-                    output.add(new Replacement(matcher.start(), matcher.end(), replacement));
-                } else {
-                    String usd = formatUsd(parseCoins(matcher.group(1), matcher.group(2)));
-                    output.add(new Replacement(matcher.start(), matcher.end(), usd));
-                }
+                String replacement = matcher.group(1) + formatUsd(parseCoins(matcher.group(2), matcher.group(3)));
+                output.add(new Replacement(matcher.start(), matcher.end(), replacement));
+            } catch (RuntimeException ignored) {
+                // Leave malformed values untouched.
+            }
+        }
+    }
+
+    private static void collectCoinWordReplacements(Matcher matcher, List<Replacement> output) {
+        while (matcher.find()) {
+            try {
+                String replacement = formatUsd(parseCoins(matcher.group(1), matcher.group(2)));
+                output.add(new Replacement(matcher.start(), matcher.end(), replacement));
             } catch (RuntimeException ignored) {
                 // Leave malformed values untouched.
             }
@@ -189,9 +185,10 @@ public class SkyblockUsdMod implements ModInitializer {
     private static void collectBazaarReplacements(Matcher matcher, List<Replacement> output) {
         while (matcher.find()) {
             try {
-                String replacement = formatUsd(parseCoins(matcher.group(1), null)) + " | "
-                        + formatUsd(parseCoins(matcher.group(2), null));
-                output.add(new Replacement(matcher.start(), matcher.end(), replacement));
+                output.add(new Replacement(matcher.start(1), matcher.end(1),
+                        formatUsd(parseCoins(matcher.group(1), null))));
+                output.add(new Replacement(matcher.start(2), matcher.end(2),
+                        formatUsd(parseCoins(matcher.group(2), null))));
             } catch (RuntimeException ignored) {
                 // Leave malformed values untouched.
             }
