@@ -1,13 +1,16 @@
 {
   "schemaVersion": 1,
   "id": "coins-to-money",
-  "version": "1.0.0",
+  "version": "${version}",
   "name": "Coins to Money",
   "description": "Replaces Hypixel SkyBlock coin values with their USD equivalent",
   "environment": "client",
   "entrypoints": {
     "main": [
       "com.example.skyblockusd.SkyblockUsdMod"
+    ],
+    "client": [
+      "com.example.skyblockusd.SkyblockUsdModClient"
     ]
   },
   "mixins": [
@@ -15,6 +18,7 @@
   ],
   "depends": {
     "fabricloader": ">=0.19.5",
+    "fabric-api": ">=0.155.3+26.1.2",
     "minecraft": "26.1.2",
     "java": ">=25"
   }
