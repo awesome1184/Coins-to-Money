@@ -1,9 +1,9 @@
 package com.example.skyblockusd;
 
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +11,6 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,12 +36,13 @@ public class SkyblockUsdMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        LOGGER.info("Coins-to-Money initializing...");
+        LOGGER.info("Coins-to-Money initializing for Minecraft 26.1.2+");
         CookiePriceFetcher.startPeriodicUpdates(5);
     }
 
     public static String replaceCoinsString(String text) {
         if (text == null || text.isEmpty()) return text;
+
         String result = replaceMatches(text, SCOREBOARD_PATTERN, 1, 2, 3, false);
         result = replaceMatches(result, COIN_WORD_PATTERN, 0, 1, 2, true);
         return replaceBazaarPairs(result);
@@ -111,91 +111,81 @@ public class SkyblockUsdMod implements ModInitializer {
     }
 
     /**
-     * Rebuilds the Text tree while retaining the effective style of each
-     * original segment. Bazaar buy/sell values are replaced independently,
-     * so their original red/green colors remain independent as well.
+     * Rebuilds a Component without flattening its styles. Coin replacements
+     * inherit the exact style of the text segment where the original amount began.
      */
-    public static Text replaceCoinsText(Text original) {
+    public static Component replaceCoinsComponent(Component original) {
         if (original == null) return null;
 
         List<StyledPart> parts = new ArrayList<>();
-        original.visit((style, string) -> {
-            if (!string.isEmpty()) parts.add(new StyledPart(string, style));
-            return Optional.empty();
-        }, original.getStyle());
+        original.visit((style, text) -> {
+            if (!text.isEmpty()) parts.add(new StyledPart(text, style));
+            return java.util.Optional.empty();
+        });
 
         if (parts.isEmpty()) return original;
 
-        StringBuilder all = new StringBuilder();
-        for (StyledPart part : parts) all.append(part.text());
+        StringBuilder combined = new StringBuilder();
+        for (StyledPart part : parts) combined.append(part.text());
 
         List<Replacement> replacements = new ArrayList<>();
-        Matcher matcher = SCOREBOARD_PATTERN.matcher(all);
-        collectScoreboardReplacements(matcher, replacements);
-        matcher = COIN_WORD_PATTERN.matcher(all);
-        collectCoinWordReplacements(matcher, replacements);
-        matcher = BAZAAR_PAIR_PATTERN.matcher(all);
-        collectBazaarReplacements(matcher, replacements);
+        collectReplacements(SCOREBOARD_PATTERN, combined, replacements, false);
+        collectReplacements(COIN_WORD_PATTERN, combined, replacements, true);
+        collectReplacements(BAZAAR_PAIR_PATTERN, combined, replacements, true);
 
         replacements.sort((a, b) -> Integer.compare(a.start(), b.start()));
-        if (replacements.isEmpty()) return original;
-
         List<Replacement> filtered = new ArrayList<>();
         int lastEnd = -1;
-        for (Replacement replacement : replacements) {
-            if (replacement.start() >= lastEnd) {
-                filtered.add(replacement);
-                lastEnd = replacement.end();
+        for (Replacement r : replacements) {
+            if (r.start() >= lastEnd) {
+                filtered.add(r);
+                lastEnd = r.end();
             }
         }
 
-        MutableText rebuilt = Text.empty().setStyle(original.getStyle());
+        if (filtered.isEmpty()) return original;
+
+        MutableComponent rebuilt = Component.empty().withStyle(original.getStyle());
         int cursor = 0;
-        for (Replacement replacement : filtered) {
-            appendStyledRange(rebuilt, parts, cursor, replacement.start());
-            rebuilt.append(Text.literal(replacement.replacement()).setStyle(styleAt(parts, replacement.start())));
-            cursor = replacement.end();
+        for (Replacement r : filtered) {
+            appendStyledRange(rebuilt, parts, cursor, r.start());
+            rebuilt.append(Component.literal(r.replacement()).withStyle(styleAt(parts, r.start())));
+            cursor = r.end();
         }
-        appendStyledRange(rebuilt, parts, cursor, all.length());
+        appendStyledRange(rebuilt, parts, cursor, combined.length());
         return rebuilt;
     }
 
-    private static void collectScoreboardReplacements(Matcher matcher, List<Replacement> output) {
+    private static void collectReplacements(Pattern pattern, CharSequence text, List<Replacement> out, boolean wholeMatch) {
+        Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
             try {
-                String replacement = matcher.group(1) + formatUsd(parseCoins(matcher.group(2), matcher.group(3)));
-                output.add(new Replacement(matcher.start(), matcher.end(), replacement));
+                String number;
+                String suffix;
+                String replacement;
+
+                if (pattern == SCOREBOARD_PATTERN) {
+                    number = matcher.group(2);
+                    suffix = matcher.group(3);
+                    replacement = matcher.group(1) + formatUsd(parseCoins(number, suffix));
+                } else if (pattern == COIN_WORD_PATTERN) {
+                    number = matcher.group(1);
+                    suffix = matcher.group(2);
+                    replacement = formatUsd(parseCoins(number, suffix));
+                } else {
+                    String left = formatUsd(parseCoins(matcher.group(1), null));
+                    String right = formatUsd(parseCoins(matcher.group(2), null));
+                    replacement = left + " | " + right;
+                }
+
+                out.add(new Replacement(matcher.start(), matcher.end(), replacement));
             } catch (RuntimeException ignored) {
                 // Leave malformed values untouched.
             }
         }
     }
 
-    private static void collectCoinWordReplacements(Matcher matcher, List<Replacement> output) {
-        while (matcher.find()) {
-            try {
-                String replacement = formatUsd(parseCoins(matcher.group(1), matcher.group(2)));
-                output.add(new Replacement(matcher.start(), matcher.end(), replacement));
-            } catch (RuntimeException ignored) {
-                // Leave malformed values untouched.
-            }
-        }
-    }
-
-    private static void collectBazaarReplacements(Matcher matcher, List<Replacement> output) {
-        while (matcher.find()) {
-            try {
-                output.add(new Replacement(matcher.start(1), matcher.end(1),
-                        formatUsd(parseCoins(matcher.group(1), null))));
-                output.add(new Replacement(matcher.start(2), matcher.end(2),
-                        formatUsd(parseCoins(matcher.group(2), null))));
-            } catch (RuntimeException ignored) {
-                // Leave malformed values untouched.
-            }
-        }
-    }
-
-    private static void appendStyledRange(MutableText destination, List<StyledPart> parts, int start, int end) {
+    private static void appendStyledRange(MutableComponent destination, List<StyledPart> parts, int start, int end) {
         if (start >= end) return;
         int position = 0;
         for (StyledPart part : parts) {
@@ -204,8 +194,7 @@ public class SkyblockUsdMod implements ModInitializer {
             int from = Math.max(start, partStart);
             int to = Math.min(end, partEnd);
             if (from < to) {
-                String chunk = part.text().substring(from - partStart, to - partStart);
-                destination.append(Text.literal(chunk).setStyle(part.style()));
+                destination.append(Component.literal(part.text().substring(from - partStart, to - partStart)).withStyle(part.style()));
             }
             position = partEnd;
             if (position >= end) break;
