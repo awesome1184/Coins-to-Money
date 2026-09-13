@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 /** Converts explicit Hypixel SkyBlock coin amounts into USD. */
 public class SkyblockUsdMod implements net.fabricmc.api.ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("coins-to-money");
+    public static volatile boolean enabled = true;
 
     private static final String NUMBER = "([\\d]+(?:[,.][\\d]+)*)";
     private static final String SUFFIX = "([kmbtqKMBTQ])?";
