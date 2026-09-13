@@ -2,8 +2,6 @@ package com.example.skyblockusd.mixin;
 
 import com.example.skyblockusd.SkyblockUsdMod;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.PlainTextContent;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,29 +17,17 @@ public class DrawContextMixin {
         ordinal = 0
     )
     private Text interceptModdedGuiText(Text text) {
-        if (text == null || !text.getString().contains("Coins")) {
+        if (text == null) {
+            return null;
+        }
+        String fullString = text.getString();
+        if (fullString == null || !fullString.contains("Coins")) {
             return text;
         }
-        return rebuildTextTree(text);
-    }
-
-    private Text rebuildTextTree(Text original) {
-        MutableText rebuilt;
-        
-        if (original.getContent() instanceof PlainTextContent plain) {
-            String raw = plain.string();
-            String converted = SkyblockUsdMod.replaceCoinsString(raw);
-            rebuilt = Text.literal(converted);
-        } else {
-            rebuilt = MutableText.of(original.getContent());
+        String modified = SkyblockUsdMod.replaceCoinsString(fullString);
+        if (!modified.equals(fullString)) {
+            return Text.literal(modified).setStyle(text.getStyle());
         }
-
-        rebuilt.setStyle(original.getStyle());
-
-        for (Text sibling : original.getSiblings()) {
-            rebuilt.append(rebuildTextTree(sibling));
-        }
-
-        return rebuilt;
+        return text;
     }
 }
