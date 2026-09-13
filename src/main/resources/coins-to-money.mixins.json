@@ -2,10 +2,9 @@
   "required": true,
   "package": "com.example.skyblockusd.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [
-    "TextRendererMixin"
+  "client": [
+    "DrawContextMixin"
   ],
-  "client": [],
   "injectors": {
     "defaultRequire": 1
   }
