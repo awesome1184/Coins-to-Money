@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "coins-to-money",
+  "version": "1.0.0",
+  "name": "Coins to Money",
+  "description": "Converts Hypixel Skyblock coins to USD.",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "com.example.skyblockusd.SkyblockUsdMod"
+    ]
+  },
+  "mixins": [
+    "coins-to-money.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~1.21"
+  }
+}
