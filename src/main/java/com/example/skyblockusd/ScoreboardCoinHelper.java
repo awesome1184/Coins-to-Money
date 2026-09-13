@@ -2,84 +2,103 @@ package com.example.skyblockusd;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.world.scores.PlayerTeam;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Handles Hypixel's scoreboard coin format where the final two digits are stored separately. */
+/** Handles Hypixel's split scoreboard coin format. */
 public final class ScoreboardCoinHelper {
-    private static final String FORMAT_CODES = "(?:§[0-9a-fk-or])*";
-    private static final int MISSING_SCORE_DIGITS = 2;
-
-    /** Matches labels such as "Purse: 7,014,5" or "Balance: 12,345". */
     private static final Pattern SPLIT_OWNER_PATTERN = Pattern.compile(
-            "(?i)^(.*\\b(?:purse|piggy|balance|coins)\\s*[:=]\\s*)" +
-            FORMAT_CODES + "([\\d,.]+)\\s*$"
+            "(?i)^(.*\\b(?:purse|piggy|balance|coins)\\s*[:=]\\s*)([\\d][\\d,]*)\\s*$"
     );
 
     private ScoreboardCoinHelper() {}
 
-    public static boolean isSplitScoreboardCoinOwner(Component ownerName) {
-        return ownerName != null && isSplitScoreboardCoinOwner(ownerName.getString());
+    /** Builds the name after the scoreboard team prefix/suffix have been applied. */
+    public static Component buildTeamFormattedName(PlayerTeam team, Component ownerName) {
+        MutableComponent result = Component.empty();
+        if (team != null) result.append(team.getPlayerPrefix());
+        result.append(ownerName.copy());
+        if (team != null) result.append(team.getPlayerSuffix());
+        return result;
     }
 
-    public static boolean isSplitScoreboardCoinOwner(String owner) {
-        return owner != null && SPLIT_OWNER_PATTERN.matcher(stripFormatting(owner)).matches();
+    public static boolean isSplitScoreboardCoinOwner(Component formattedName) {
+        return formattedName != null && isSplitScoreboardCoinOwner(formattedName.getString());
     }
 
-    /** Removes the partial number from the owner component so it cannot be drawn twice. */
-    public static Component stripSplitScoreboardNumber(Component ownerName) {
-        if (ownerName == null) return null;
-        Matcher matcher = SPLIT_OWNER_PATTERN.matcher(stripFormatting(ownerName.getString()));
-        if (!matcher.matches()) return ownerName;
-
-        return Component.literal(matcher.group(1)).withStyle(ownerName.getStyle());
+    public static boolean isSplitScoreboardCoinOwner(String formattedName) {
+        return formattedName != null && SPLIT_OWNER_PATTERN.matcher(formattedName).matches();
     }
 
-    /**
-     * Hypixel's sidebar can split the final two digits of a coin amount into PlayerScoreEntry.value().
-     * We cannot reliably recover those digits at this rendering boundary, so the display-side
-     * fallback deliberately treats the visible partial amount as missing exactly two digits:
-     *     visibleAmount × 100
-     * The separate score is replaced with the resulting USD value, so the raw digits disappear.
-     */
+    /** Removes only the trailing numeric portion, keeping all preceding component styles intact. */
+    public static Component stripSplitScoreboardNumber(Component formattedName) {
+        if (formattedName == null) return null;
+        Matcher matcher = SPLIT_OWNER_PATTERN.matcher(formattedName.getString());
+        if (!matcher.matches()) return formattedName;
+
+        List<StyledPart> parts = flatten(formattedName);
+        MutableComponent rebuilt = Component.empty().withStyle(formattedName.getStyle());
+        appendStyledRange(rebuilt, parts, 0, matcher.start(2));
+        return rebuilt;
+    }
+
+    /** Reconstructs the full value as partial * 100 + the separate scoreboard value. */
     public static MutableComponent formatSplitScoreboardValue(
-            String owner,
+            Component formattedName,
             int score,
             MutableComponent vanillaScore
     ) {
-        if (!SkyblockUsdMod.enabled || owner == null || vanillaScore == null) return null;
+        if (!SkyblockUsdMod.enabled || formattedName == null || vanillaScore == null) return null;
 
-        String cleanOwner = stripFormatting(owner);
-        Matcher matcher = SPLIT_OWNER_PATTERN.matcher(cleanOwner);
+        Matcher matcher = SPLIT_OWNER_PATTERN.matcher(formattedName.getString());
         if (!matcher.matches()) return null;
 
-        String partialNumber = matcher.group(2).replace(",", "").replace(".", "");
-        if (partialNumber.isEmpty()) return null;
-
+        String partial = matcher.group(2).replace(",", "");
         try {
-            double visibleAmount = Double.parseDouble(partialNumber);
-            double coins = visibleAmount * Math.pow(10, MISSING_SCORE_DIGITS);
-
-            if (!Double.isFinite(coins) || coins < 0 || !Double.isFinite(CookiePriceFetcher.coinsPerUsd)
-                    || CookiePriceFetcher.coinsPerUsd <= 0) {
-                return null;
-            }
+            long fullCoins = Math.addExact(Math.multiplyExact(Long.parseLong(partial), 100L), score);
+            if (fullCoins < 0) return null;
 
             NumberFormat currency = NumberFormat.getCurrencyInstance(Locale.US);
             currency.setMinimumFractionDigits(ModConfig.decimalPlaces);
             currency.setMaximumFractionDigits(ModConfig.decimalPlaces);
-
-            return Component.literal(currency.format(coins / CookiePriceFetcher.coinsPerUsd))
+            return Component.literal(currency.format(fullCoins / CookiePriceFetcher.coinsPerUsd))
                     .withStyle(vanillaScore.getStyle());
-        } catch (NumberFormatException ignored) {
+        } catch (ArithmeticException | NumberFormatException ignored) {
             return null;
         }
     }
 
-    private static String stripFormatting(String text) {
-        return text.replaceAll("§[0-9a-fk-or]", "");
+    private static List<StyledPart> flatten(Component component) {
+        List<StyledPart> parts = new ArrayList<>();
+        component.visit((style, text) -> {
+            if (!text.isEmpty()) parts.add(new StyledPart(text, style));
+            return java.util.Optional.empty();
+        }, component.getStyle());
+        return parts;
     }
+
+    private static void appendStyledRange(MutableComponent destination, List<StyledPart> parts, int start, int end) {
+        if (start >= end) return;
+        int position = 0;
+        for (StyledPart part : parts) {
+            int partStart = position;
+            int partEnd = position + part.text().length();
+            int from = Math.max(start, partStart);
+            int to = Math.min(end, partEnd);
+            if (from < to) {
+                destination.append(Component.literal(part.text().substring(from - partStart, to - partStart)).withStyle(part.style()));
+            }
+            position = partEnd;
+            if (position >= end) break;
+        }
+    }
+
+    private record StyledPart(String text, Style style) {}
 }
