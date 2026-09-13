@@ -45,7 +45,7 @@ public class SkyblockUsdMod implements net.fabricmc.api.ModInitializer {
     }
 
     public static String replaceCoinsString(String text) {
-        if (text == null || text.isEmpty()) return text;
+        if (!enabled || text == null || text.isEmpty()) return text;
         String result = replaceNumericSpans(text, SCOREBOARD_PATTERN, 1, 2);
         result = replaceNumericSpans(result, COIN_WORD_PATTERN, 1, 2);
         return replaceBazaarPairs(result);
@@ -111,7 +111,7 @@ public class SkyblockUsdMod implements net.fabricmc.api.ModInitializer {
     }
 
     public static Component replaceCoinsComponent(Component original) {
-        if (original == null) return null;
+        if (!enabled || original == null) return original;
         List<StyledPart> parts = new ArrayList<>();
         original.visit((style, text) -> {
             if (!text.isEmpty()) parts.add(new StyledPart(text, style));
