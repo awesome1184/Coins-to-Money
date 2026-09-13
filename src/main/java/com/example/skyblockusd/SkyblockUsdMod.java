@@ -9,47 +9,42 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Converts Hypixel SkyBlock coin displays into their USD equivalent.
- *
- * The matcher deliberately requires a coin/currency context so ordinary
- * numbers such as damage, health, item counts, and coordinates are not
- * converted accidentally.
- */
+/** Converts the coin amounts used throughout Hypixel SkyBlock into USD. */
 public class SkyblockUsdMod implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("coins-to-money");
 
-    /*
-     * Supported forms include:
-     *   1 Coins / 1,234 Coins / 1.5 Coins
-     *   1K, 1.5K, 1M, 2.35B, 4T, 7Q
-     *   1k Coins / 1.5M Coins / 4.2T coins
-     *   Coins: 1,234 / Coins: 1.5M
-     *   1,234 coins / 1,234 COINS
-     *
-     * Minecraft formatting codes are allowed between the number, suffix,
-     * and the word Coins.
-     */
-    private static final String FORMAT_CODES = "(?:§[0-9a-fk-or])*(?:&[0-9a-fk-or])*";
+    private static final String NUMBER = "([\\d]+(?:[,.][\\d]+)*)";
+    private static final String SUFFIX = "([kmbtqKMBTQ])?";
+    private static final String FORMAT_CODES = "(?:§[0-9a-fk-or])*";
 
-    private static final Pattern COIN_PATTERN = Pattern.compile(
-            "(?<![\d.])" +
-            "(?:(?:coins?|coin)\s*[:=]?\s*)?" +
-            "([\d]+(?:[,.][\d]+)*)" +
-            FORMAT_CODES +
-            "\s*([kmbtqKMBTQ])?" +
-            FORMAT_CODES +
-            "\s*" +
-            "(?:coins?|coin)?" +
-            "(?![A-Za-z])",
-            Pattern.CASE_INSENSITIVE
+    /*
+     * Scoreboard:
+     *   Purse: 123,456
+     *   Piggy: 123,456.7
+     *   Coins: 123,456
+     *
+     * Auction House / Bazaar / other menus:
+     *   text: 123,456 coins
+     *   item for 123,456 coins
+     *   - 123,456 coins text
+     *   item 123,456 | 234,567
+     *
+     * The coin word is optional only for the documented scoreboard prefixes
+     * and Bazaar price-pair form. This avoids converting unrelated numbers.
+     */
+    private static final Pattern SCOREBOARD_PATTERN = Pattern.compile(
+            "(?i)(\\b(?:purse|piggy|coins)\\s*[:=]\\s*)" +
+            FORMAT_CODES + NUMBER + FORMAT_CODES + "\\s*" + SUFFIX + FORMAT_CODES + "(?=$|[^A-Za-z])"
     );
 
-    private static final Pattern COINS_PREFIX_PATTERN = Pattern.compile(
-            "(?i)\\bcoins?\\s*[:=]\\s*" +
-            FORMAT_CODES +
-            "\s*([\\d]+(?:[,.][\\d]+)*)\\s*" +
-            "([kmbtq]?)\\b"
+    private static final Pattern COIN_WORD_PATTERN = Pattern.compile(
+            "(?i)(?<![\\d.])" + NUMBER + FORMAT_CODES + "\\s*" + SUFFIX + FORMAT_CODES +
+            "\\s*coins?\\b"
+    );
+
+    private static final Pattern BAZAAR_PAIR_PATTERN = Pattern.compile(
+            "(?<![\\d.])" + NUMBER + FORMAT_CODES + "\\s*" +
+            "\\|\\s*" + FORMAT_CODES + NUMBER + "(?![\\d.])"
     );
 
     @Override
@@ -63,57 +58,65 @@ public class SkyblockUsdMod implements ModInitializer {
             return text;
         }
 
-        // The generic matcher below requires a currency word unless a suffix
-        // is present. This prevents ordinary GUI numbers from being converted.
-        Matcher matcher = COIN_PATTERN.matcher(text);
-        StringBuffer sb = new StringBuffer();
+        String result = replaceMatches(text, SCOREBOARD_PATTERN, 1, 2, 3, false);
+        result = replaceMatches(result, COIN_WORD_PATTERN, 0, 1, 2, true);
+        result = replaceBazaarPairs(result);
+        return result;
+    }
+
+    private static String replaceMatches(String text, Pattern pattern, int prefixGroup, int numberGroup,
+                                         int suffixGroup, boolean replaceWholeMatch) {
+        Matcher matcher = pattern.matcher(text);
+        StringBuffer output = new StringBuffer();
         boolean changed = false;
 
         while (matcher.find()) {
-            String whole = matcher.group(0);
-
-            // Do not treat a plain number as money unless it is explicitly
-            // adjacent to "coin(s)" or uses a recognized K/M/B/T/Q suffix.
-            String suffix = matcher.group(2);
-            boolean hasCoinWord = whole.toLowerCase(Locale.ROOT).matches(".*coins?.*");
-            boolean hasSuffix = suffix != null && !suffix.isEmpty();
-            if (!hasCoinWord && !hasSuffix) {
-                continue;
-            }
-
             try {
-                double coins = parseCoins(matcher.group(1), suffix);
-                if (!Double.isFinite(coins) || coins < 0) {
-                    continue;
+                double coins = parseCoins(matcher.group(numberGroup), matcher.group(suffixGroup));
+                String usd = formatUsd(coins);
+
+                String replacement;
+                if (replaceWholeMatch) {
+                    replacement = usd;
+                } else {
+                    replacement = matcher.group(prefixGroup) + usd;
                 }
 
-                double usdValue = coins / CookiePriceFetcher.coinsPerUsd;
-                String replacement = NumberFormat.getCurrencyInstance(Locale.US).format(usdValue);
-
-                matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
+                matcher.appendReplacement(output, Matcher.quoteReplacement(replacement));
                 changed = true;
-            } catch (NumberFormatException ignored) {
-                // Leave malformed text untouched.
+            } catch (RuntimeException ignored) {
+                matcher.appendReplacement(output, Matcher.quoteReplacement(matcher.group(0)));
             }
         }
 
-        matcher.appendTail(sb);
-        return changed ? sb.toString() : text;
+        matcher.appendTail(output);
+        return changed ? output.toString() : text;
+    }
+
+    private static String replaceBazaarPairs(String text) {
+        Matcher matcher = BAZAAR_PAIR_PATTERN.matcher(text);
+        StringBuffer output = new StringBuffer();
+        boolean changed = false;
+
+        while (matcher.find()) {
+            try {
+                double leftCoins = parseCoins(matcher.group(1), null);
+                double rightCoins = parseCoins(matcher.group(2), null);
+                String replacement = formatUsd(leftCoins) + " | " + formatUsd(rightCoins);
+                matcher.appendReplacement(output, Matcher.quoteReplacement(replacement));
+                changed = true;
+            } catch (RuntimeException ignored) {
+                matcher.appendReplacement(output, Matcher.quoteReplacement(matcher.group(0)));
+            }
+        }
+
+        matcher.appendTail(output);
+        return changed ? output.toString() : text;
     }
 
     private static double parseCoins(String number, String suffix) {
-        /*
-         * Hypixel commonly displays large values with K/M/B-style suffixes;
-         * T and Q are accepted as well so the parser remains useful for the
-         * full large-number notation rather than silently failing at 1T+.
-         *
-         * For decimal-comma locales we cannot safely infer whether a comma
-         * is decimal or thousands from the rendered Minecraft string, so
-         * Hypixel's normal comma-separated integer form is treated as
-         * thousands separators.
-         */
-        String normalized = number.replace(",", "");
-        double value = Double.parseDouble(normalized);
+        // Hypixel's normal large-number display uses commas as thousands separators.
+        double value = Double.parseDouble(number.replace(",", ""));
 
         if (suffix == null || suffix.isEmpty()) {
             return value;
@@ -127,5 +130,13 @@ public class SkyblockUsdMod implements ModInitializer {
             case "q" -> value * 1_000_000_000_000_000d;
             default -> value;
         };
+    }
+
+    private static String formatUsd(double coins) {
+        if (!Double.isFinite(coins) || coins < 0 || !Double.isFinite(CookiePriceFetcher.coinsPerUsd)
+                || CookiePriceFetcher.coinsPerUsd <= 0) {
+            throw new IllegalArgumentException("Invalid conversion rate or coin amount");
+        }
+        return NumberFormat.getCurrencyInstance(Locale.US).format(coins / CookiePriceFetcher.coinsPerUsd);
     }
 }
