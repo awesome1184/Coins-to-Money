@@ -2,22 +2,18 @@ package com.example.skyblockusd;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
 
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Handles Hypixel's scoreboard format where the final digits live in the numeric score field. */
+/** Handles Hypixel's scoreboard coin format where the final two digits are stored separately. */
 public final class ScoreboardCoinHelper {
     private static final String FORMAT_CODES = "(?:§[0-9a-fk-or])*";
+    private static final int MISSING_SCORE_DIGITS = 2;
 
-    /**
-     * Matches a scoreboard owner whose visible text is a coin label followed by a partial
-     * numeric value, e.g. "Purse: 7,014,5". Hypixel then supplies the final digits separately
-     * through PlayerScoreEntry.value().
-     */
+    /** Matches labels such as "Purse: 7,014,5" or "Balance: 12,345". */
     private static final Pattern SPLIT_OWNER_PATTERN = Pattern.compile(
             "(?i)^(.*\\b(?:purse|piggy|balance|coins)\\s*[:=]\\s*)" +
             FORMAT_CODES + "([\\d,.]+)\\s*$"
@@ -33,27 +29,28 @@ public final class ScoreboardCoinHelper {
         return owner != null && SPLIT_OWNER_PATTERN.matcher(stripFormatting(owner)).matches();
     }
 
-    /** Removes the partial numeric suffix so vanilla will not draw it on the left side. */
+    /** Removes the partial number from the owner component so it cannot be drawn twice. */
     public static Component stripSplitScoreboardNumber(Component ownerName) {
         if (ownerName == null) return null;
-        String visible = ownerName.getString();
-        Matcher matcher = SPLIT_OWNER_PATTERN.matcher(stripFormatting(visible));
+        Matcher matcher = SPLIT_OWNER_PATTERN.matcher(stripFormatting(ownerName.getString()));
         if (!matcher.matches()) return ownerName;
 
-        String label = matcher.group(1);
-        return Component.literal(label).withStyle(ownerName.getStyle());
+        return Component.literal(matcher.group(1)).withStyle(ownerName.getStyle());
     }
 
     /**
-     * Reconstructs the full coin amount from the raw scoreboard owner plus score value and
-     * returns the USD component with the score's existing formatting preserved.
+     * Hypixel's sidebar can split the final two digits of a coin amount into PlayerScoreEntry.value().
+     * We cannot reliably recover those digits at this rendering boundary, so the display-side
+     * fallback deliberately treats the visible partial amount as missing exactly two digits:
+     *     visibleAmount × 100
+     * The separate score is replaced with the resulting USD value, so the raw digits disappear.
      */
     public static MutableComponent formatSplitScoreboardValue(
             String owner,
             int score,
             MutableComponent vanillaScore
     ) {
-        if (owner == null || vanillaScore == null) return null;
+        if (!SkyblockUsdMod.enabled || owner == null || vanillaScore == null) return null;
 
         String cleanOwner = stripFormatting(owner);
         Matcher matcher = SPLIT_OWNER_PATTERN.matcher(cleanOwner);
@@ -63,8 +60,9 @@ public final class ScoreboardCoinHelper {
         if (partialNumber.isEmpty()) return null;
 
         try {
-            // Hypixel deliberately moves the final digits into PlayerScoreEntry.value().
-            double coins = Double.parseDouble(partialNumber + Math.abs(score));
+            double visibleAmount = Double.parseDouble(partialNumber);
+            double coins = visibleAmount * Math.pow(10, MISSING_SCORE_DIGITS);
+
             if (!Double.isFinite(coins) || coins < 0 || !Double.isFinite(CookiePriceFetcher.coinsPerUsd)
                     || CookiePriceFetcher.coinsPerUsd <= 0) {
                 return null;
