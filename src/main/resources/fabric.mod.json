@@ -11,6 +11,9 @@
     ],
     "client": [
       "com.example.skyblockusd.SkyblockUsdModClient"
+    ],
+    "modmenu": [
+      "com.example.skyblockusd.ModMenuIntegration"
     ]
   },
   "mixins": [
