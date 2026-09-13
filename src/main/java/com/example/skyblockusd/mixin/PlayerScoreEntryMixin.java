@@ -1,6 +1,6 @@
 package com.example.skyblockusd.mixin;
 
-import com.example.skyblockusd.SkyblockUsdMod;
+import com.example.skyblockusd.ScoreboardCoinHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.numbers.NumberFormat;
@@ -11,17 +11,16 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Hypixel uses the scoreboard's owner text for all but the final digits of some coin values,
- * then stores the final digits in PlayerScoreEntry.value(). Vanilla renders those separately.
- * Handle both halves here, before GUI rendering can split them apart.
+ * Handles Hypixel's split scoreboard coin values before GUI rendering.
+ * The visible owner text contains most of the number while value() contains the final digits.
  */
 @Mixin(PlayerScoreEntry.class)
 public class PlayerScoreEntryMixin {
     @Inject(method = "ownerName", at = @At("RETURN"), cancellable = true)
     private void coinsToUsdOwnerName(CallbackInfoReturnable<Component> cir) {
         Component original = cir.getReturnValue();
-        if (SkyblockUsdMod.isSplitScoreboardCoinOwner(original)) {
-            cir.setReturnValue(SkyblockUsdMod.stripSplitScoreboardNumber(original));
+        if (ScoreboardCoinHelper.isSplitScoreboardCoinOwner(original)) {
+            cir.setReturnValue(ScoreboardCoinHelper.stripSplitScoreboardNumber(original));
         }
     }
 
@@ -29,12 +28,15 @@ public class PlayerScoreEntryMixin {
     private void coinsToUsdValue(NumberFormat format, CallbackInfoReturnable<MutableComponent> cir) {
         PlayerScoreEntry entry = (PlayerScoreEntry) (Object) this;
         String owner = entry.owner();
-        if (!SkyblockUsdMod.isSplitScoreboardCoinOwner(owner)) {
+        if (!ScoreboardCoinHelper.isSplitScoreboardCoinOwner(owner)) {
             return;
         }
 
-        MutableComponent vanillaScore = cir.getReturnValue();
-        MutableComponent converted = SkyblockUsdMod.formatSplitScoreboardValue(owner, entry.value(), vanillaScore);
+        MutableComponent converted = ScoreboardCoinHelper.formatSplitScoreboardValue(
+                owner,
+                entry.value(),
+                cir.getReturnValue()
+        );
         if (converted != null) {
             cir.setReturnValue(converted);
         }
