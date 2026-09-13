@@ -7,7 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SkyblockUsdMod implements ModInitializer {
-    private static final Pattern COIN_PATTERN = Pattern.compile("([\\d,.]+)([kmbKMB]?)\\s*(?:§[0-9a-fk-or])*Coins");
+    private static final Pattern COIN_PATTERN = Pattern.compile("([\\d,.]+)([kmbKMB]?)\\s*Coins", Pattern.CASE_INSENSITIVE);
 
     @Override
     public void onInitialize() {
@@ -25,7 +25,7 @@ public class SkyblockUsdMod implements ModInitializer {
         while (matcher.find()) {
             try {
                 String numberStr = matcher.group(1).replace(",", "");
-                String suffix = matcher.group(2).toLowerCase();
+                String suffix = matcher.group(2) != null ? matcher.group(2).toLowerCase() : "";
                 double coins = Double.parseDouble(numberStr);
 
                 switch (suffix) {
