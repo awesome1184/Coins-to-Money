@@ -43,4 +43,4 @@ public class CookiePriceFetcher {
             // Falls back to the default rate if the API fails or rate-limits
         }
     }
-}src/main/java/com/example/skyblockusd/
+}
