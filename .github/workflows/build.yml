@@ -15,6 +15,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      - name: Generate Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.8
+
       - name: Grant Executor Permission
         run: chmod +x gradlew
 
