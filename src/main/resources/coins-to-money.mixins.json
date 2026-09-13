@@ -3,7 +3,8 @@
   "package": "com.example.skyblockusd.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "DrawContextMixin"
+    "DrawContextMixin",
+    "PlayerScoreEntryMixin"
   ],
   "injectors": {
     "defaultRequire": 1
