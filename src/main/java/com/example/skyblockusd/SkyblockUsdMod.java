@@ -110,10 +110,7 @@ public class SkyblockUsdMod implements ModInitializer {
         return NumberFormat.getCurrencyInstance(Locale.US).format(coins / CookiePriceFetcher.coinsPerUsd);
     }
 
-    /**
-     * Rebuilds a Component without flattening its styles. Coin replacements
-     * inherit the exact style of the text segment where the original amount began.
-     */
+    /** Rebuilds a Component while preserving every original text segment's Style. */
     public static Component replaceCoinsComponent(Component original) {
         if (original == null) return null;
 
@@ -121,7 +118,7 @@ public class SkyblockUsdMod implements ModInitializer {
         original.visit((style, text) -> {
             if (!text.isEmpty()) parts.add(new StyledPart(text, style));
             return java.util.Optional.empty();
-        });
+        }, original.getStyle());
 
         if (parts.isEmpty()) return original;
 
@@ -129,17 +126,17 @@ public class SkyblockUsdMod implements ModInitializer {
         for (StyledPart part : parts) combined.append(part.text());
 
         List<Replacement> replacements = new ArrayList<>();
-        collectReplacements(SCOREBOARD_PATTERN, combined, replacements, false);
-        collectReplacements(COIN_WORD_PATTERN, combined, replacements, true);
-        collectReplacements(BAZAAR_PAIR_PATTERN, combined, replacements, true);
+        collectReplacements(SCOREBOARD_PATTERN, combined, replacements);
+        collectReplacements(COIN_WORD_PATTERN, combined, replacements);
+        collectReplacements(BAZAAR_PAIR_PATTERN, combined, replacements);
 
         replacements.sort((a, b) -> Integer.compare(a.start(), b.start()));
         List<Replacement> filtered = new ArrayList<>();
         int lastEnd = -1;
-        for (Replacement r : replacements) {
-            if (r.start() >= lastEnd) {
-                filtered.add(r);
-                lastEnd = r.end();
+        for (Replacement replacement : replacements) {
+            if (replacement.start() >= lastEnd) {
+                filtered.add(replacement);
+                lastEnd = replacement.end();
             }
         }
 
@@ -147,38 +144,29 @@ public class SkyblockUsdMod implements ModInitializer {
 
         MutableComponent rebuilt = Component.empty().withStyle(original.getStyle());
         int cursor = 0;
-        for (Replacement r : filtered) {
-            appendStyledRange(rebuilt, parts, cursor, r.start());
-            rebuilt.append(Component.literal(r.replacement()).withStyle(styleAt(parts, r.start())));
-            cursor = r.end();
+        for (Replacement replacement : filtered) {
+            appendStyledRange(rebuilt, parts, cursor, replacement.start());
+            rebuilt.append(Component.literal(replacement.replacement()).withStyle(styleAt(parts, replacement.start())));
+            cursor = replacement.end();
         }
         appendStyledRange(rebuilt, parts, cursor, combined.length());
         return rebuilt;
     }
 
-    private static void collectReplacements(Pattern pattern, CharSequence text, List<Replacement> out, boolean wholeMatch) {
+    private static void collectReplacements(Pattern pattern, CharSequence text, List<Replacement> output) {
         Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
             try {
-                String number;
-                String suffix;
                 String replacement;
-
                 if (pattern == SCOREBOARD_PATTERN) {
-                    number = matcher.group(2);
-                    suffix = matcher.group(3);
-                    replacement = matcher.group(1) + formatUsd(parseCoins(number, suffix));
+                    replacement = matcher.group(1) + formatUsd(parseCoins(matcher.group(2), matcher.group(3)));
                 } else if (pattern == COIN_WORD_PATTERN) {
-                    number = matcher.group(1);
-                    suffix = matcher.group(2);
-                    replacement = formatUsd(parseCoins(number, suffix));
+                    replacement = formatUsd(parseCoins(matcher.group(1), matcher.group(2)));
                 } else {
-                    String left = formatUsd(parseCoins(matcher.group(1), null));
-                    String right = formatUsd(parseCoins(matcher.group(2), null));
-                    replacement = left + " | " + right;
+                    replacement = formatUsd(parseCoins(matcher.group(1), null)) + " | "
+                            + formatUsd(parseCoins(matcher.group(2), null));
                 }
-
-                out.add(new Replacement(matcher.start(), matcher.end(), replacement));
+                output.add(new Replacement(matcher.start(), matcher.end(), replacement));
             } catch (RuntimeException ignored) {
                 // Leave malformed values untouched.
             }
