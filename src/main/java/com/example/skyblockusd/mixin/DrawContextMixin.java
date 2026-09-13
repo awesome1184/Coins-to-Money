@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 @Mixin(GuiGraphicsExtractor.class)
 public class DrawContextMixin {
     @ModifyVariable(
-            method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIII)V",
+            method = "text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;III)V",
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private Component coinsToUsd(Component text) {
         return SkyblockUsdMod.replaceCoinsComponent(text);
@@ -26,16 +26,16 @@ public class DrawContextMixin {
     }
 
     @ModifyVariable(
-            method = "text(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)V",
+            method = "text(Lnet/minecraft/client/gui/Font;Ljava/lang/String;III)V",
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private String coinsToUsdString(String text) {
         return SkyblockUsdMod.replaceCoinsString(text);
     }
 
     @ModifyVariable(
-            method = "text(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIII)V",
+            method = "text(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)V",
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
-    private String coinsToUsdStringNoShadow(String text) {
+    private String coinsToUsdStringShadow(String text) {
         return SkyblockUsdMod.replaceCoinsString(text);
     }
 
