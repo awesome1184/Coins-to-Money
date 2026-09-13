@@ -29,10 +29,7 @@ public class SkyblockUsdModClient implements ClientModInitializer {
                 SkyblockUsdMod.enabled = !SkyblockUsdMod.enabled;
                 if (client.player != null) {
                     String state = SkyblockUsdMod.enabled ? "enabled" : "disabled";
-                    client.player.displayClientMessage(
-                            Component.literal("Coins to Money: " + state),
-                            true
-                    );
+                    client.player.sendOverlayMessage(Component.literal("Coins to Money: " + state));
                 }
             }
         });
