@@ -3,7 +3,7 @@
   "id": "coins-to-money",
   "version": "${version}",
   "name": "Coins to Money",
-  "description": "Show SkyBlock coins as instant-buy Booster Cookie and USD equivalents.",
+  "description": "Replace SkyBlock coin prices with USD, using the live instant-buy cookie price.",
   "environment": "client",
   "entrypoints": {
     "main": ["com.example.skyblockusd.SkyblockUsdMod"],

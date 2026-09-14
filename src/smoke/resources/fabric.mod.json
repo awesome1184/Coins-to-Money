@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "coins-to-money-smoke",
+  "version": "1.0.0",
+  "name": "Coins to Money render test fixtures",
+  "environment": "client",
+  "entrypoints": { "client": ["com.example.skyblockusd.smoke.ClientSmoke"] },
+  "mixins": ["coins-to-money-smoke.mixins.json"],
+  "depends": { "coins-to-money": "*" }
+}

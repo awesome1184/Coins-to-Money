@@ -1,7 +1,7 @@
 {
   "required": true,
-  "package": "com.example.skyblockusd.mixin",
+  "package": "com.example.skyblockusd.smoke",
   "compatibilityLevel": "JAVA_25",
-  "client": ["SidebarMixin"],
+  "client": ["ScreenFrameProbe"],
   "injectors": { "defaultRequire": 1 }
 }

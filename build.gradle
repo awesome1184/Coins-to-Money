@@ -47,3 +47,25 @@ publishing {
         }
     }
 }
+
+// Render fixtures are a separate mod, not production code or JAR contents.
+sourceSets {
+    smoke {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+loom {
+    mods {
+        'coins-to-money' { sourceSet sourceSets.main }
+        'coins-to-money-smoke' { sourceSet sourceSets.smoke }
+    }
+    runs {
+        smokeClient {
+            client()
+            source sourceSets.smoke
+            runDir 'run-smoke'
+            vmArg '-Dmixin.debug.countInjections=true'
+        }
+    }
+}

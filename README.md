@@ -1,7 +1,7 @@
 # Coins to Money
 
 Client-side Fabric mod for **Minecraft 26.1.2 / Java 25**, originally by awesome1184.
-Keeps SkyBlock's coin amounts visible and adds their Booster Cookie and USD equivalents.
+Replaces SkyBlock coin amounts with their USD equivalents. Cookie counts are optional; there is no HUD overlay.
 
 ## Conversion
 
@@ -10,61 +10,45 @@ cookies = coins / current cookie instant-buy price
 USD = cookies * 325 * (100 / 11000)
 ```
 
-The requested basis is **11,000 gems for $100 USD** and **325 gems per Booster Cookie**:
-approximately **$2.954545 per cookie**. Fractions are retained until display rounding. This is
-a replacement-cost comparison, not a cash-out value. Taxes, promotions and large-order
-slippage are not included; cookie counts are fractional equivalents, not whole-item quotes.
+The requested basis is **11,000 gems for $100 USD** and **325 gems per Booster Cookie**, approximately $2.954545 per cookie. Fractions are retained until display rounding. This is a replacement-cost comparison, not a cash-out value. The fixed gem-bundle basis is explained in [docs/CONVERSION.md](docs/CONVERSION.md).
 
-The mod queries Hypixel's public Bazaar endpoint once per minute while enabled in SkyBlock.
-It selects the cheapest available `BOOSTER_COOKIE.buy_summary` offer with at least one cookie.
-In Hypixel's API naming this is the instant-buy side. `quick_status.buyPrice` is a weighted
-average, so it is deliberately **not** used. No API key, profile API or telemetry is needed.
+The public Bazaar endpoint is queried once per minute while enabled in SkyBlock. The mod selects the cheapest available `BOOSTER_COOKIE.buy_summary` offer with at least one cookie, not the weighted `quick_status.buyPrice` average. No API key or profile API is required. Bulk-order slippage and taxes are not included.
 
-API reference: https://api.hypixel.net/#tag/SkyBlock/paths/~1v2~1skyblock~1bazaar/get
+## Display and controls
 
-## Where it appears
+- Purse, Piggy Bank and bank/balance sidebar rows, including the separate formatted score column.
+- Bazaar, Auction House, NPC and other recognized coin prices in item tooltips. Amounts and the `coins` unit are replaced in place, e.g. `Worth $3.27`.
+- Server chat and action-bar coin amounts, retaining surrounding style and click/hover metadata. Signed player-chat events are not modified.
 
-- Full purse / Piggy Bank / bank sidebar rows, after the team prefix, name and suffix are joined.
-- Item tooltips, including Bazaar, Auction House, NPC shops, bids and costs expressed as coins
-  or recognized price labels. Multiple prices receive separate, labelled equivalents.
-- Server chat and action-bar coin amounts, retaining the original message components.
-- A HUD with the purse's cookie/USD equivalent, coin price per cookie and USD basis.
+**K** opens settings; **O** toggles the mod. Both keys are rebindable. Mod Menu is optional.
+Cookie counts are OFF by default and can be enabled in settings; USD precision is configurable from 2 to 8 decimals. The top-left HUD has been removed completely. Saved `showGui`, `guiX` and `guiY` settings are ignored, so upgrading does not require deleting the config.
 
-The mod activates for a `SKYBLOCK` sidebar on `hypixel.net` or its subdomains. It does not
-rewrite unrelated item stats, quantities, gems, or player chat. Numbers drawn directly by
-other mods without vanilla components/tooltips are not guaranteed to be covered. It cannot
-recover precision already rounded by the server (e.g. a displayed `1.2m`).
-
-**K** opens settings; **O** toggles the mod. Both are rebindable. Mod Menu is optional.
-HUD coordinates are `guiX` and `guiY` in `config/coins-to-money.json`.
+The mod requires a `SKYBLOCK` sidebar on `hypixel.net` or a subdomain, including team-specific sidebar slots. Other currencies, item counts, stats and malformed currency amounts are left alone. Custom renderers supplied by other mods are not guaranteed to be covered. Server-rounded amounts such as `1.2m` cannot be made more precise.
 
 ## Failure behaviour
 
-No fabricated fallback price is used. Before the first valid response, the HUD says loading
-or unavailable and original coin text stays untouched. Last-good quotes are marked stale
-after three minutes or immediately after an API error; they expire after 30 minutes.
-Requests have timeouts and response-size limits, use one daemon worker, and never block
-rendering. The previous world's purse is cleared on leaving SkyBlock or losing the purse row.
-Legacy saved exchange-rate fields are not treated as current prices.
+No fabricated fallback price is used. Until a valid rate is available, original text stays unchanged. Quotes are marked `(stale)` after three minutes or immediately after an API error, and expire after 30 minutes. Requests run off the rendering thread with timeouts and response-size limits. Legacy saved exchange rates are not treated as current prices.
 
-## Build and test
+## Build and tests
 
-Install JDK 25 and Gradle 9.5.1, then run:
+Install JDK 25 and Gradle 9.5.1:
 
 ```sh
 gradle clean build --no-daemon
 ```
 
-Install `build/libs/coins-to-money-1.1.0.jar` with Fabric Loader 0.19.5+ and Fabric API
-0.155.3+26.1.2. Do not install the sources JAR. CI publishes the mod JAR and test reports as
-workflow artifacts, and boots the real client under Xvfb to check entrypoints and mixins.
+Install `build/libs/coins-to-money-1.1.1.jar` with Fabric Loader 0.19.5+ and Fabric API 0.155.3+26.1.2. Do not install the sources JAR or an older copy alongside it.
 
-Regression tests cover the reported `7,014,5` + `56` truncation, real team assembly, raw score
-preservation, formatting between digits, comma/decimal/suffix parsing, malformed numbers,
-duplicate annotations, multiple prices, non-coin currencies, price-side selection, USD
-arithmetic, stale/missing API responses, component preservation, and locale independence.
+For rendering tests, install Xvfb, Mesa and ImageMagick, then run:
 
-The startup smoke test is not a live-server test. The remaining manual check is to join
-Hypixel, compare a changing purse to the full vanilla amount, hover Bazaar/AH/NPC prices,
-check chat, toggle each setting, and compare the cookie quote with a one-cookie instant buy.
-Sidebar-replacement mods may require their own integration.
+```sh
+xvfb-run -a python3 ci/smoke_client.py
+```
+
+JUnit covers parsing, USD arithmetic, rate validation and expiry, styled text replacement, complete and split formatted-score values, objective-level number formats, leading zeros, large balances, raw ordering-score preservation, repeat conversion and non-coin values.
+
+A separate test mod exercises the actual enabled sidebar and tooltip hooks, checks measured score widths, renders a synthetic sidebar/tooltip and the real settings screen with blur enabled, then verifies returning to its parent. CI publishes the JAR, test reports, logs and screenshots. Test code is excluded from the release JAR.
+
+The settings screen relies on Minecraft's existing background extraction instead of requesting blur twice. The sidebar hook runs at `Gui.lambda$displayScoreboardSidebar$1` after both visible components are assembled, before layout; no global team-name hook or `partial * 100 + score` guess remains.
+
+These are synthetic rendering tests, **not a logged-in Hypixel playtest**. Live-server verification still means comparing a changing purse, Bazaar/AH tooltips and toggles against the unmodified game.

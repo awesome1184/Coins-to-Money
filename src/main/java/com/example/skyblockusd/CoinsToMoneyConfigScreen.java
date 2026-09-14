@@ -15,9 +15,14 @@ public final class CoinsToMoneyConfigScreen extends Screen {
         toggle("Sidebar conversion", () -> ModConfig.INSTANCE.enablePurse, () -> ModConfig.INSTANCE.enablePurse = !ModConfig.INSTANCE.enablePurse, x, y + 24);
         toggle("Item / Bazaar / AH tooltips", () -> ModConfig.INSTANCE.enableTooltips, () -> ModConfig.INSTANCE.enableTooltips = !ModConfig.INSTANCE.enableTooltips, x, y + 48);
         toggle("Server chat / action bar", () -> ModConfig.INSTANCE.enableChat, () -> ModConfig.INSTANCE.enableChat = !ModConfig.INSTANCE.enableChat, x, y + 72);
-        toggle("Cookie / USD HUD", () -> ModConfig.INSTANCE.showGui, () -> ModConfig.INSTANCE.showGui = !ModConfig.INSTANCE.showGui, x, y + 96);
-        addRenderableWidget(Button.builder(Component.literal("Refresh price"), button -> CookiePriceFetcher.requestRefresh()).bounds(x, y + 124, 107, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose()).bounds(x + 113, y + 124, 107, 20).build());
+        toggle("Show cookie count", () -> ModConfig.INSTANCE.showCookies, () -> ModConfig.INSTANCE.showCookies = !ModConfig.INSTANCE.showCookies, x, y + 96);
+        addRenderableWidget(Button.builder(Component.literal("USD decimals: " + ModConfig.INSTANCE.decimalPlaces), button -> {
+            ModConfig.INSTANCE.decimalPlaces = ModConfig.INSTANCE.decimalPlaces >= 8 ? 2 : ModConfig.INSTANCE.decimalPlaces + 1;
+            ModConfig.save();
+            button.setMessage(Component.literal("USD decimals: " + ModConfig.INSTANCE.decimalPlaces));
+        }).bounds(x, y + 120, 220, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Refresh price"), button -> CookiePriceFetcher.requestRefresh()).bounds(x, y + 148, 107, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose()).bounds(x + 113, y + 148, 107, 20).build());
     }
     private void toggle(String label, BooleanSupplier value, Runnable action, int x, int y) {
         addRenderableWidget(Button.builder(label(label, value.getAsBoolean()), button -> {
@@ -26,7 +31,7 @@ public final class CoinsToMoneyConfigScreen extends Screen {
     }
     private static Component label(String text, boolean enabled) { return Component.literal(text + ": " + (enabled ? "ON" : "OFF")); }
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        extractBackground(graphics, mouseX, mouseY, delta);
+        // Screen.extractRenderStateWithTooltipAndSubtitles already extracts the background once.
         graphics.centeredText(font, title, width / 2, 15, 0xFFFFFFFF);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
     }

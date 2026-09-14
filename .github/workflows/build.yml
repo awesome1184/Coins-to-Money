@@ -1,10 +1,11 @@
-name: Inspect rendering fixtures
-on: [push, workflow_dispatch]
+name: Build and render regression tests
+on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
 jobs:
-  inspect:
+  build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -14,32 +15,36 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.5.1'
-      - run: gradle classes --no-daemon
-      - name: Collect source and exact rendering contracts
+      - name: Build and unit regression tests
+        run: gradle clean build --no-daemon
+      - name: Install virtual display and screenshot tools
+        run: sudo apt-get update -qq && sudo apt-get install -y xvfb libgl1-mesa-dri imagemagick
+      - name: Test enabled sidebar hooks and render settings
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: xvfb-run -a -s '-screen 0 1280x800x24' python3 ci/smoke_client.py
+      - name: Verify release does not contain test fixtures
         run: |
-          mkdir -p evidence
-          git archive HEAD -o evidence/source.zip
           python3 - <<'PY'
           from pathlib import Path
-          import zipfile, subprocess
-          classes = ['net.minecraft.client.gui.Gui', 'net.minecraft.client.gui.Gui$1DisplayEntry', 'net.minecraft.client.gui.screens.Screen', 'net.minecraft.client.renderer.GameRenderer', 'net.minecraft.client.gui.GuiGraphicsExtractor', 'net.minecraft.client.renderer.state.gui.GuiRenderState', 'net.minecraft.world.scores.PlayerScoreEntry', 'net.minecraft.world.scores.Scoreboard', 'net.minecraft.world.scores.Objective', 'net.minecraft.world.scores.ScoreAccess', 'net.minecraft.network.chat.numbers.FixedFormat', 'net.minecraft.network.chat.numbers.BlankFormat', 'net.minecraft.client.multiplayer.ClientLevel', 'net.minecraft.client.gui.render.GuiRenderer', 'net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest', 'net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext']
-          found = set()
-          for root in [Path.home()/'.gradle/caches', Path('.gradle')]:
-              for jar in root.rglob('*.jar'):
-                  try:
-                      with zipfile.ZipFile(jar) as z: names = set(z.namelist())
-                      for cls in classes:
-                          if cls in found or cls.replace('.', '/')+'.class' not in names: continue
-                          found.add(cls)
-                          out = subprocess.check_output(['javap', '-classpath', str(jar), '-p', '-c', cls], text=True)
-                          Path('evidence', cls+'.txt').write_text(out)
-                      if 'net/fabricmc/fabric/api/client/gametest/v1/FabricClientGameTest.class' in names:
-                          Path('evidence/gametest-entries.txt').write_text('\n'.join(sorted(names)))
-                  except (zipfile.BadZipFile, subprocess.CalledProcessError): pass
-          print('Found:', sorted(found))
-          print('Missing:', sorted(set(classes)-found))
+          import zipfile
+          for jar in Path('build/libs').glob('*.jar'):
+              if jar.name.endswith('-sources.jar'): continue
+              with zipfile.ZipFile(jar) as z:
+                  assert not any('smoke' in name.lower() for name in z.namelist()), 'Test mod leaked into release'
+                  assert 'com/example/skyblockusd/mixin/SidebarMixin.class' in z.namelist()
+                  assert 'com/example/skyblockusd/mixin/TeamNameMixin.class' not in z.namelist()
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: rendering-contracts
-          path: evidence/
+          name: coins-to-money-${{ github.sha }}
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+            build/test-results/test/*.xml
+            build/reports/tests/test/**
+            build/ci-client.log
+            build/*.png
+            run-smoke/logs/latest.log
+            run-smoke/crash-reports/*.txt

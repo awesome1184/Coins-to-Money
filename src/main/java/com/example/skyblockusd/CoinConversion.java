@@ -19,6 +19,15 @@ public record CoinConversion(double cookies, double usd) {
         return new CoinConversion(cookies, usd);
     }
 
+    public String dollars(int precision) {
+        int decimals = Math.max(2, Math.min(8, precision));
+        double minimum = Math.pow(10, -decimals);
+        if (usd != 0 && Math.abs(usd) < minimum)
+            return (usd < 0 ? "-<$" : "<$") + String.format(Locale.US, "%." + decimals + "f", minimum);
+        return (usd < 0 ? "-$" : "$") + String.format(Locale.US, "%,." + decimals + "f", Math.abs(usd));
+    }
+    public String cookieCount() { return cookieText(cookies); }
+
     public String display() { return cookieText(cookies) + " cookies | $" + moneyText(usd) + " USD"; }
     private static String cookieText(double value) {
         if (value != 0 && Math.abs(value) < .001d) return value < 0 ? "-<0.001" : "<0.001";
