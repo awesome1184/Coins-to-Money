@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 /** Works on both DISPLAY columns, never guesses digits from the sorting score. */
 public final class ScoreboardCoinHelper {
     private static final Pattern LABEL_ONLY = Pattern.compile("(?i)^\\h*(?:Purse|Piggy(?: Bank)?|Bank|Balance|Coins):\\h*$");
+    private static final Pattern INCOMPLETE_GROUP = Pattern.compile("(?i)^.*\\b(?:Purse|Piggy(?: Bank)?|Bank|Balance|Coins):\\h*[+-]?[0-9]{1,3}(?:,[0-9]{3})*,[0-9]{0,2}$");
     public record Row(Component name, Component value) { }
     private ScoreboardCoinHelper() { }
 
@@ -29,7 +30,11 @@ public final class ScoreboardCoinHelper {
         String left = CoinParser.plain(name.getString());
         // FixedFormat contains server-provided text, not PlayerScoreEntry.value().
         // Hypixel can put some or ALL of the purse in that separate right column.
-        if (fixedValue || LABEL_ONLY.matcher(left).matches()) {
+        // Some servers encode a numeric tail using StyledFormat (or another NumberFormat),
+        // not FixedFormat. Only join that ambiguous numeric column when it completes an
+        // INCOMPLETE comma group. A complete left amount must never absorb a sorting score.
+        boolean incompleteGroup = INCOMPLETE_GROUP.matcher(left).matches();
+        if (fixedValue || LABEL_ONLY.matcher(left).matches() || incompleteGroup) {
             Component combined = Component.empty().append(name).append(value);
             String visible = combined.getString();
             if (CoinParser.isBalance(visible) && CoinParser.find(visible, true, false).stream().anyMatch(a -> a.end() > left.length())) {

@@ -42,8 +42,19 @@ class ScoreboardCoinHelperTest {
     @Test void neverMultipliesByOneHundredOrAppendsOrderingScores() {
         var result = row("Purse: 123", "8", false);
         assertEquals("Purse: <$0.01", result.name().getString()); assertEquals("8", result.value().getString());
-        result = row("Purse: 7,416,6", "11", false);
-        assertEquals("Purse: 7,416,6", result.name().getString()); assertEquals("11", result.value().getString());
+        result = row("Purse: 7,416,611", "11", false);
+        assertEquals("Purse: $1.78", result.name().getString()); assertEquals("11", result.value().getString());
+    }
+    @Test void unambiguousIncompleteGroupingDoesNotRequireFixedFormat() {
+        var result = row("Purse: 7,416,6", "11", false);
+        assertEquals("Purse: $1.78", result.name().getString());
+        assertEquals("", result.value().getString());
+        result = row("Purse: 7,014,5", "56", false);
+        assertEquals("Purse: $1.69", result.name().getString());
+        assertEquals("", result.value().getString());
+        assertEquals("Purse: 7,41,6", row("Purse: 7,41,6", "11", false).name().getString());
+        assertEquals("Purse: 7,416,", row("Purse: 7,416,", "11", false).name().getString());
+        assertEquals("Purse: $1.78", row("Purse: 7,416,", "611", false).name().getString());
     }
     @Test void leadingZeroTailsAndGainSuffixesArePreserved() {
         assertEquals("Purse: $1.69", row("Purse: 7,014,5", "00 (+56)", true).name().getString().replace(" (+56)", ""));

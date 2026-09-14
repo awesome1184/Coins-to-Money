@@ -15,7 +15,7 @@ public final class ModConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static Path configFile() { return FabricLoader.getInstance().getConfigDir().resolve("coins-to-money.json"); }
     public static ModConfig INSTANCE = new ModConfig();
-    public int schemaVersion = 3;
+    public int schemaVersion = 4;
     public boolean enabled = true;
     public boolean enablePurse = true;
     public boolean enableTooltips = true;
@@ -25,9 +25,22 @@ public final class ModConfig {
     public boolean keepCoins = false;
     public int decimalPlaces = 2;
     public int cookieDecimalPlaces = 3;
+    public DisplayOrder displayOrder = DisplayOrder.COINS_MONEY_COOKIES;
+    public DisplayLayout displayLayout = DisplayLayout.BRACKETS;
+    public String currencyCode = "USD";
+    public double currencyPerUsd = 1d;
 
     public void normalize() {
-        schemaVersion = 3;
+        schemaVersion = 4;
+        if (displayOrder == null) displayOrder = DisplayOrder.COINS_MONEY_COOKIES;
+        if (displayLayout == null) displayLayout = DisplayLayout.BRACKETS;
+        try {
+            currencyCode = MoneyCurrency.code(currencyCode);
+            MoneyCurrency.validate(currencyCode, currencyPerUsd);
+        } catch (IllegalArgumentException ex) {
+            currencyCode = "USD";
+            currencyPerUsd = 1d;
+        }
         decimalPlaces = Math.clamp(decimalPlaces, 2, 8);
         cookieDecimalPlaces = Math.clamp(cookieDecimalPlaces, 1, 6);
         if (!showUsd && !showCookies && !keepCoins) showUsd = true;

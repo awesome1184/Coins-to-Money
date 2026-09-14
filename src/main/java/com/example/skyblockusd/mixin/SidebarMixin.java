@@ -1,6 +1,7 @@
 package com.example.skyblockusd.mixin;
 
 import com.example.skyblockusd.ScoreboardCoinHelper;
+import com.example.skyblockusd.SidebarDiagnostics;
 import com.example.skyblockusd.SkyblockUsdModClient;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
@@ -21,6 +22,7 @@ public abstract class SidebarMixin {
     @ModifyArgs(method = "lambda$displayScoreboardSidebar$1", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/Gui$1DisplayEntry;<init>(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/Component;I)V"))
     private void coinsToMoney$completeRow(Args args, Scoreboard scoreboard, NumberFormat defaultFormat, PlayerScoreEntry entry) {
+        SidebarDiagnostics.seen();
         if (!SkyblockUsdModClient.inSkyblock()) return;
         var row = ScoreboardCoinHelper.convertRow(args.get(0), args.get(1), entry, defaultFormat);
         args.set(0, row.name());

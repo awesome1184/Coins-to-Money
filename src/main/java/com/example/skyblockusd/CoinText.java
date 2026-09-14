@@ -1,5 +1,6 @@
 package com.example.skyblockusd;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -7,11 +8,16 @@ import net.minecraft.util.StringDecomposer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.Collections;
 import java.util.regex.Pattern;
 
 /** Replace currency spans only, preserving surrounding text, styles and interactions. */
 public final class CoinText {
     private static final Pattern COIN_UNIT = Pattern.compile("(?i)^\\h*coins?\\b");
+    // Weak keys avoid retaining old chat/tooltips. No invisible text or interaction metadata is added.
+    private static final Map<Component, Boolean> GENERATED = Collections.synchronizedMap(new WeakHashMap<>());
     private record Part(int start, int end, String text, Style style) { }
     private CoinText() { }
 
@@ -21,6 +27,7 @@ public final class CoinText {
     static Component convert(Component original, boolean balances, boolean prices,
                              CookiePriceFetcher.State state, long now, ModConfig config) {
         if (original == null || !config.enabled || !state.available(now) || (!config.showUsd && !config.showCookies)) return original;
+        if (GENERATED.containsKey(original)) return original;
         String raw = original.getString();
         if (raw.length() > 16_384 || CoinParser.find(raw, balances, prices).isEmpty()) return original;
         // Component siblings and legacy formatting can split a number at ANY digit.
@@ -45,21 +52,40 @@ public final class CoinText {
         boolean changed = false;
         for (var amount : amounts) {
             CoinConversion value;
-            try { value = CoinConversion.of(amount.coins(), state.quote().instantBuyPrice()); }
+            try {
+                value = CoinConversion.of(amount.coins(), state.quote().instantBuyPrice());
+                if (config.showUsd) value.moneyText(config); // Fail closed on invalid manual rates/overflow.
+            }
             catch (IllegalArgumentException ex) { continue; }
             if (amount.start() < cursor) continue;
             int end = amount.end();
             var unit = COIN_UNIT.matcher(text.substring(end));
             if (unit.find()) end += unit.end();
-            appendRange(output, parts, cursor, config.keepCoins ? end : amount.start());
-            String replacement = value.display(config) + (state.stale(now) ? " (stale)" : "");
-            output.append(Component.literal(config.keepCoins ? " [" + replacement + "]" : replacement)
-                    .withStyle(styleAt(parts, amount.start())));
+            appendRange(output, parts, cursor, amount.start());
+            List<DisplayOrder.Kind> visible = config.displayOrder.parts.stream().filter(kind -> switch (kind) {
+                case COINS -> config.keepCoins;
+                case MONEY -> config.showUsd;
+                case COOKIES -> config.showCookies;
+            }).toList();
+            Style originalStyle = styleAt(parts, amount.start());
+            Style green = originalStyle.withColor(ChatFormatting.GREEN);
+            for (int i = 0; i < visible.size(); i++) {
+                if (i > 0) output.append(Component.literal(i == 1 ? config.displayLayout.firstSeparator : config.displayLayout.separator)
+                        .withStyle(originalStyle));
+                switch (visible.get(i)) {
+                    case COINS -> appendRange(output, parts, amount.start(), end);
+                    case MONEY -> output.append(Component.literal(value.moneyText(config)).withStyle(green));
+                    case COOKIES -> output.append(Component.literal(value.cookieText(config.cookieDecimalPlaces)).withStyle(green));
+                }
+            }
+            if (visible.size() > 1) output.append(Component.literal(config.displayLayout.end).withStyle(originalStyle));
+            if (state.stale(now)) output.append(Component.literal(" (stale)").withStyle(originalStyle.withColor(ChatFormatting.GRAY)));
             cursor = end;
             changed = true;
         }
         if (!changed) return original;
         appendRange(output, parts, cursor, text.length());
+        GENERATED.put(output, Boolean.TRUE);
         return output;
     }
     private static Style styleAt(List<Part> parts, int position) {

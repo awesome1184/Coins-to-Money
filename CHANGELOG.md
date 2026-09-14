@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0
+
+- Recover a split purse with an incomplete comma group even when its visible tail uses
+  StyledFormat, not FixedFormat. Complete amounts still never absorb numeric ordering scores.
+- Match vanilla's team-colour sidebar selection as well as the default SIDEBAR slot.
+- Add clipboard-only purse diagnostics: actual displayed columns, format types, Unicode
+  codepoints, conversion output, settings and whether the render hook ran. No upload/telemetry.
+- Explain every setting and input through hover tooltips.
+- Add all six coin/money/cookie orders and four layouts: brackets, parentheses, bars, equals.
+- Restore green money and cookie text while retained coin amounts keep their own styles.
+- Add manual real-world currency codes and a validated target-units-per-USD multiplier.
+  Currency edits apply atomically; cancel discards changes. No FX API or invented rates.
+- Extend unit regressions and real-client testing for StyledFormat, coloured sidebars,
+  all order/layout/visibility combinations, green output, tooltips and currency editing.
+
+
 ## 1.1.1
 
 - USD-only replacement is now the default; removes the original coin unit as well as its number.

@@ -3,7 +3,7 @@
   "id": "coins-to-money",
   "version": "${version}",
   "name": "Coins to Money",
-  "description": "Replace SkyBlock coin prices with USD; optional cookies and original amounts.",
+  "description": "Replace SkyBlock coin prices with configurable money and cookie equivalents.",
   "environment": "client",
   "entrypoints": {
     "main": ["com.example.skyblockusd.SkyblockUsdMod"],

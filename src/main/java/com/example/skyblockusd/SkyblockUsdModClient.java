@@ -10,10 +10,7 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.scores.DisplaySlot;
-import net.minecraft.world.scores.Objective;
 import org.lwjgl.glfw.GLFW;
-import java.util.Locale;
 
 public final class SkyblockUsdModClient implements ClientModInitializer {
     private static boolean skyblock;
@@ -43,12 +40,7 @@ public final class SkyblockUsdModClient implements ClientModInitializer {
         });
     }
     private static void updateContext(Minecraft client) {
-        skyblock = false;
-        if (client.level == null || client.player == null || client.getCurrentServer() == null) return;
-        String address = client.getCurrentServer().ip.toLowerCase(Locale.ROOT).split(":", 2)[0];
-        if (!(address.equals("hypixel.net") || address.endsWith(".hypixel.net"))) return;
-        Objective sidebar = client.level.getScoreboard().getDisplayObjective(DisplaySlot.SIDEBAR);
-        if (sidebar == null || !CoinParser.plain(sidebar.getDisplayName().getString()).toUpperCase(Locale.ROOT).contains("SKYBLOCK")) return;
-        skyblock = true;
+        skyblock = SkyblockContext.hypixel(client) && SkyblockContext.skyblock(
+                SkyblockContext.sidebar(client.level.getScoreboard(), client.player.getScoreboardName()));
     }
 }

@@ -29,6 +29,9 @@ jobs:
         run: python3 ci/smoke_client.py
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
+      - name: Source snapshot
+        if: always()
+        run: git archive --format=zip HEAD -o build/source-snapshot.zip
       - name: Verify distribution
         run: |
           python3 - <<'PY'
@@ -58,4 +61,5 @@ jobs:
             build/smoke-run/logs/latest.log
             build/smoke-run/crash-reports/*.txt
             build/SHA256SUMS
+            build/source-snapshot.zip
             !build/libs/*-sources.jar

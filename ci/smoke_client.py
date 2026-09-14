@@ -1,4 +1,4 @@
-"""Exercise actual transformed sidebar rows and 60 settings frames in a real Fabric client.
+"""Exercise actual transformed sidebar rows and 120 settings/currency frames in a real Fabric client.
 Uses only synthetic fixtures; no Minecraft account or live Hypixel connection is required.
 """
 import os
@@ -27,4 +27,4 @@ print(text[-14000:])
 markers = ('CTM_ROW_TESTS_PASS', 'CTM_RENDER_TESTS_PASS')
 if process.returncode != 0 or any(marker not in text for marker in markers):
     raise SystemExit('Actual sidebar/settings rendering regression failed')
-print('PASS: transformed vanilla rows, widths, saved settings and 60 real blur/sidebar frames')
+print('PASS: transformed vanilla rows, widths, saved settings and 120 real settings/currency/tooltip/blur/sidebar frames')

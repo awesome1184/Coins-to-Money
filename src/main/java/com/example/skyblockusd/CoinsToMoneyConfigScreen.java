@@ -1,58 +1,63 @@
 package com.example.skyblockusd;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import java.util.Locale;
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 
 public class CoinsToMoneyConfigScreen extends Screen {
     private final Screen parent;
     private int top;
     public CoinsToMoneyConfigScreen(Screen parent) { super(Component.literal("Coins to Money")); this.parent = parent; }
-
     @Override protected void init() {
-        int w = Math.min(200, (width - 24) / 2);
-        int left = width / 2 - w - 3, right = width / 2 + 3;
-        top = Math.max(32, (height - 240) / 2 + 36);
-        toggle("Enabled", () -> ModConfig.INSTANCE.enabled, () -> ModConfig.INSTANCE.enabled = !ModConfig.INSTANCE.enabled, left, top, w);
-        toggle("Sidebar", () -> ModConfig.INSTANCE.enablePurse, () -> ModConfig.INSTANCE.enablePurse = !ModConfig.INSTANCE.enablePurse, right, top, w);
-        toggle("Bazaar / AH / tooltips", () -> ModConfig.INSTANCE.enableTooltips, () -> ModConfig.INSTANCE.enableTooltips = !ModConfig.INSTANCE.enableTooltips, left, top + 24, w);
-        toggle("Chat / action bar", () -> ModConfig.INSTANCE.enableChat, () -> ModConfig.INSTANCE.enableChat = !ModConfig.INSTANCE.enableChat, right, top + 24, w);
-        toggle("Show dollars", () -> ModConfig.INSTANCE.showUsd, () -> ModConfig.INSTANCE.showUsd = !ModConfig.INSTANCE.showUsd, left, top + 48, w);
-        toggle("Show cookies", () -> ModConfig.INSTANCE.showCookies, () -> ModConfig.INSTANCE.showCookies = !ModConfig.INSTANCE.showCookies, right, top + 48, w);
-        toggle("Keep coin amounts", () -> ModConfig.INSTANCE.keepCoins, () -> ModConfig.INSTANCE.keepCoins = !ModConfig.INSTANCE.keepCoins, left, top + 72, w);
-        addRenderableWidget(Button.builder(Component.literal("USD decimals: " + ModConfig.INSTANCE.decimalPlaces), button -> {
-            ModConfig.INSTANCE.decimalPlaces = ModConfig.INSTANCE.decimalPlaces >= 8 ? 2 : ModConfig.INSTANCE.decimalPlaces + 1;
-            ModConfig.save(); rebuildWidgets();
-        }).bounds(right, top + 72, w, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Cookie decimals: " + ModConfig.INSTANCE.cookieDecimalPlaces), button -> {
-            ModConfig.INSTANCE.cookieDecimalPlaces = ModConfig.INSTANCE.cookieDecimalPlaces >= 6 ? 1 : ModConfig.INSTANCE.cookieDecimalPlaces + 1;
-            ModConfig.save(); rebuildWidgets();
-        }).bounds(left, top + 96, w, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Refresh cookie price"), button -> CookiePriceFetcher.requestRefresh())
-                .bounds(right, top + 96, w, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose()).bounds(width / 2 - 100, top + 176, 200, 20).build());
+        int w = Math.min(188, (width - 24) / 2), left = width / 2 - w - 3, right = width / 2 + 3;
+        top = Math.max(36, (height - 228) / 2 + 36);
+        var c = ModConfig.INSTANCE;
+        toggle("Enabled", "Enable conversions everywhere. O is the default hotkey. Disabling restores original coin text; no server data is changed.", () -> c.enabled, () -> c.enabled = !c.enabled, left, top, w);
+        toggle("Sidebar", "Convert purse, Piggy Bank and bank balances in the vanilla sidebar. Both displayed columns are considered; ordinary ordering scores are not treated as coin digits.", () -> c.enablePurse, () -> c.enablePurse = !c.enablePurse, right, top, w);
+        toggle("Item tooltips", "Convert recognized coin prices in Bazaar, Auction House and NPC item tooltips. Item counts, stats, Bits and Gems are left alone.", () -> c.enableTooltips, () -> c.enableTooltips = !c.enableTooltips, left, top + 22, w);
+        toggle("Chat / action bar", "Convert coin amounts in new server game messages and the action bar, not player chat. Existing chat messages are not rewritten when settings change.", () -> c.enableChat, () -> c.enableChat = !c.enableChat, right, top + 22, w);
+        toggle("Show money", "Show the real-money equivalent in green. Uses 325 gems per cookie and the requested $100 / 11,000-gem basis, then your currency multiplier. This is not a cash-out value.", () -> c.showUsd, () -> c.showUsd = !c.showUsd, left, top + 44, w);
+        toggle("Show cookies", "Show fractional Booster Cookie equivalents in green: coins divided by the current one-cookie Bazaar instant-buy price. This is not rounded to whole purchasable cookies.", () -> c.showCookies, () -> c.showCookies = !c.showCookies, right, top + 44, w);
+        toggle("Keep coins", "Keep the original coin number and its original colour. Order and layout determine where it appears alongside money/cookies. At least one value must remain enabled.", () -> c.keepCoins, () -> c.keepCoins = !c.keepCoins, left, top + 66, w);
+        button("Currency: " + c.currencyCode, "Choose a real-world currency and enter target-currency units per 1 USD. This is a saved manual rate, not a live FX quote. Cookie prices still update automatically.", () -> minecraft.setScreen(new CurrencyConfigScreen(this)), right, top + 66, w);
+        button("Order: " + c.displayOrder.label, "Cycle all six orders of coins, money and cookies. Disabled values are skipped. For money then coins, enable Keep coins and select Money > Coins > Cookies.", () -> { c.displayOrder = c.displayOrder.next(); changed(); }, left, top + 88, w * 2 + 6);
+        button("Layout: " + c.displayLayout.label, "Cycle brackets, parentheses, inline bars and equals signs. Examples: 100 coins [$1.00], $1.00 (100 coins), or 100 coins = $1.00. No separators appear when only one value is shown.", () -> { c.displayLayout = c.displayLayout.next(); changed(); }, left, top + 110, w);
+        button("Money decimals: " + c.decimalPlaces, "Cycle 2 to 8 decimal places for money. Conversion is rounded only for display. Amounts below the smallest displayed unit use < instead of incorrectly showing zero.", () -> { c.decimalPlaces = c.decimalPlaces >= 8 ? 2 : c.decimalPlaces + 1; changed(); }, right, top + 110, w);
+        button("Cookie decimals: " + c.cookieDecimalPlaces, "Cycle 1 to 6 decimal places for fractional cookie equivalents. This does not change the conversion rate or money precision.", () -> { c.cookieDecimalPlaces = c.cookieDecimalPlaces >= 6 ? 1 : c.cookieDecimalPlaces + 1; changed(); }, left, top + 132, w);
+        button("Copy purse diagnostics", "Copy the current sidebar's currency rows, formatting types, hook status and settings to your clipboard for debugging. Contains your displayed balances; no passwords, chat or uploads. Share only when needed.", () -> minecraft.keyboardHandler.setClipboard(SidebarDiagnostics.report(minecraft)), right, top + 132, w);
+        button("Refresh cookie price", "Request an asynchronous refresh while enabled on Hypixel SkyBlock. Requests are limited to one per 30 seconds. Failed quotes are marked stale and expire after 30 minutes; no price is invented.", CookiePriceFetcher::requestRefresh, left, top + 154, w);
+        button("Done", "Return to the previous screen. These settings are saved as you change them. The standalone rate HUD remains removed.", this::onClose, right, top + 154, w);
     }
-    private void toggle(String label, BooleanSupplier value, Runnable action, int x, int y, int w) {
-        addRenderableWidget(Button.builder(Component.literal(label + ": " + (value.getAsBoolean() ? "ON" : "OFF")), button -> {
-            action.run(); ModConfig.save(); rebuildWidgets();
-        }).bounds(x, y, w, 20).build());
+    static <T extends AbstractWidget> T help(T widget, String description) {
+        widget.setTooltip(Tooltip.create(Component.literal(description)));
+        widget.setTooltipDelay(Duration.ofMillis(350));
+        return widget;
     }
+    private void button(String text, String tip, Runnable action, int x, int y, int w) {
+        addRenderableWidget(help(Button.builder(Component.literal(text), b -> action.run()).bounds(x, y, w, 20).build(), tip));
+    }
+    private void toggle(String text, String tip, BooleanSupplier value, Runnable action, int x, int y, int w) {
+        button(text + ": " + (value.getAsBoolean() ? "ON" : "OFF"), tip, () -> { action.run(); changed(); }, x, y, w);
+    }
+    private void changed() { ModConfig.save(); rebuildWidgets(); }
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
-        // Screen.extractRenderStateWithTooltipAndSubtitles already renders the background.
-        // Calling extractBackground here blurs TWICE and crashes Minecraft 26.1.2.
+        // Vanilla's wrapper already extracts the background. Never blur twice.
         super.extractRenderState(graphics, mouseX, mouseY, delta);
-        graphics.centeredText(font, title, width / 2, top - 22, 0xFFFFFFFF);
-        var state = CookiePriceFetcher.state();
+        graphics.centeredText(font, title, width / 2, top - 28, 0xFFFFFFFF);
         long now = System.currentTimeMillis();
-        String quote = state.available(now)
-                ? String.format(Locale.US, "Cookie instant buy: %,.1f coins%s", state.quote().instantBuyPrice(), state.stale(now) ? " (stale)" : "")
-                : "Cookie price unavailable - originals shown until a quote arrives";
-        graphics.centeredText(font, Component.literal(quote), width / 2, top + 128, 0xFFCCCCCC);
-        graphics.centeredText(font, Component.literal("USD basis: $100 / 11,000 gems; 325 gems / cookie"), width / 2, top + 140, 0xFFCCCCCC);
-        graphics.centeredText(font, Component.literal("At least one value stays visible. O toggles the mod; K opens settings."), width / 2, top + 152, 0xFFAAAAAA);
+        var previewRate = new CookiePriceFetcher.State(new BazaarQuote(1_000, now), null);
+        Component preview = CoinText.convert(Component.literal("1,000 coins").withStyle(ChatFormatting.GOLD), false, false, previewRate, now, ModConfig.INSTANCE);
+        // This is a labelled illustrative preview, not a live coin/cookie quote.
+        Component sample = Component.literal("Preview: ").withStyle(ChatFormatting.GRAY).append(preview);
+        var lines = font.split(sample, width - 20);
+        if (!lines.isEmpty()) graphics.text(font, lines.getFirst(), Math.max(10, (width - font.width(lines.getFirst())) / 2), top - 14, 0xFFFFFFFF, true);
+        graphics.centeredText(font, Component.literal("Hover for help. Currency rates are manual."), width / 2, top + 181, 0xFFAAAAAA);
     }
     @Override public void onClose() { ModConfig.save(); if (minecraft != null) minecraft.setScreen(parent); }
     @Override public boolean isPauseScreen() { return false; }

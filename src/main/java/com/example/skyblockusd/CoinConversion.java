@@ -25,13 +25,16 @@ public record CoinConversion(double cookies, double usd) {
         if (config.showCookies) return cookieText(config.cookieDecimalPlaces);
         return usdText(config.decimalPlaces);
     }
+    public String moneyText(ModConfig config) {
+        return MoneyCurrency.format(usd, config.currencyCode, config.currencyPerUsd, config.decimalPlaces);
+    }
     public String cookieText(int precision) {
         return number(cookies, Math.clamp(precision, 1, 6), "") + " cookies";
     }
     public String usdText(int precision) {
         return number(usd, Math.clamp(precision, 2, 8), "$");
     }
-    private static String number(double value, int precision, String unit) {
+    static String number(double value, int precision, String unit) {
         String sign = value < 0 ? "-" : "";
         double minimum = Math.pow(10, -precision);
         if (value != 0 && Math.abs(value) < minimum) {

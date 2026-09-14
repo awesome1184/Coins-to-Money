@@ -29,7 +29,7 @@ class CoinTextTest {
         assertEquals("Purse: 7,416,611 (+56)", raw.getString());
         var colors = new ArrayList<Integer>();
         result.visit((style, s) -> { if (s.contains("$")) colors.add(style.getColor().getValue()); return Optional.empty(); }, Style.EMPTY);
-        assertEquals(ChatFormatting.GOLD.getColor(), colors.getFirst());
+        assertEquals(ChatFormatting.GREEN.getColor(), colors.getFirst());
         assertSame(result, convert(result, new ModConfig()));
     }
     @Test void legacyCodesAndInvisibleCharactersDoNotCorruptOffsets() {
@@ -73,7 +73,7 @@ class CoinTextTest {
     @Test void configMigrationDropsOldHudAndClampsInvalidDisplaySettings() {
         ModConfig cfg = new com.google.gson.Gson().fromJson("{\"schemaVersion\":2,\"showGui\":true,\"decimalPlaces\":999,\"cookieDecimalPlaces\":-4}", ModConfig.class);
         cfg.normalize();
-        assertEquals(3, cfg.schemaVersion); assertEquals(8, cfg.decimalPlaces); assertEquals(1, cfg.cookieDecimalPlaces);
+        assertEquals(4, cfg.schemaVersion); assertEquals(8, cfg.decimalPlaces); assertEquals(1, cfg.cookieDecimalPlaces);
         assertTrue(cfg.showUsd); assertFalse(cfg.showCookies); assertFalse(cfg.keepCoins);
         assertFalse(new com.google.gson.Gson().toJson(cfg).contains("showGui"));
         cfg.showUsd = false; cfg.normalize(); assertTrue(cfg.showUsd);
