@@ -1,4 +1,5 @@
 {
-  "key.categories.coins-to-money.general": "Coins to Money",
-  "key.coins-to-money.toggle": "Toggle coin conversion"
+  "key.category.coins-to-money.general": "Coins to Money",
+  "key.coins-to-money.config": "Open Coins to Money settings",
+  "key.coins-to-money.toggle": "Toggle Coins to Money"
 }

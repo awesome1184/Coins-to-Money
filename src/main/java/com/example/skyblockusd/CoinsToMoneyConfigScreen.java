@@ -4,57 +4,32 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import java.util.function.BooleanSupplier;
 
-/** Simple Mod Menu configuration screen for display precision. */
-public class CoinsToMoneyConfigScreen extends Screen {
+public final class CoinsToMoneyConfigScreen extends Screen {
     private final Screen parent;
-    private Button precisionButton;
-
-    public CoinsToMoneyConfigScreen(Screen parent) {
-        super(Component.literal("Coins to Money Settings"));
-        this.parent = parent;
+    public CoinsToMoneyConfigScreen(Screen parent) { super(Component.literal("Coins to Money")); this.parent = parent; }
+    @Override protected void init() {
+        int x = width / 2 - 110, y = Math.max(35, height / 2 - 90);
+        toggle("Enabled", () -> ModConfig.INSTANCE.enabled, () -> ModConfig.INSTANCE.enabled = !ModConfig.INSTANCE.enabled, x, y);
+        toggle("Sidebar conversion", () -> ModConfig.INSTANCE.enablePurse, () -> ModConfig.INSTANCE.enablePurse = !ModConfig.INSTANCE.enablePurse, x, y + 24);
+        toggle("Item / Bazaar / AH tooltips", () -> ModConfig.INSTANCE.enableTooltips, () -> ModConfig.INSTANCE.enableTooltips = !ModConfig.INSTANCE.enableTooltips, x, y + 48);
+        toggle("Server chat / action bar", () -> ModConfig.INSTANCE.enableChat, () -> ModConfig.INSTANCE.enableChat = !ModConfig.INSTANCE.enableChat, x, y + 72);
+        toggle("Cookie / USD HUD", () -> ModConfig.INSTANCE.showGui, () -> ModConfig.INSTANCE.showGui = !ModConfig.INSTANCE.showGui, x, y + 96);
+        addRenderableWidget(Button.builder(Component.literal("Refresh price"), button -> CookiePriceFetcher.requestRefresh()).bounds(x, y + 124, 107, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose()).bounds(x + 113, y + 124, 107, 20).build());
     }
-
-    @Override
-    protected void init() {
-        super.init();
-
-        precisionButton = Button.builder(
-                precisionText(),
-                button -> {
-                    ModConfig.decimalPlaces = ModConfig.nextDecimalPlaces();
-                    ModConfig.save();
-                    button.setMessage(precisionText());
-                }
-        ).bounds(this.width / 2 - 100, this.height / 2 - 10, 200, 20).build();
-        this.addRenderableWidget(precisionButton);
-
-        this.addRenderableWidget(Button.builder(
-                Component.literal("Done"),
-                button -> this.onClose()
-        ).bounds(this.width / 2 - 100, this.height / 2 + 20, 200, 20).build());
+    private void toggle(String label, BooleanSupplier value, Runnable action, int x, int y) {
+        addRenderableWidget(Button.builder(label(label, value.getAsBoolean()), button -> {
+            action.run(); ModConfig.save(); button.setMessage(label(label, value.getAsBoolean()));
+        }).bounds(x, y, 220, 20).build());
     }
-
-    private Component precisionText() {
-        return Component.literal("Decimal places: " + ModConfig.decimalPlaces);
-    }
-
-    @Override
-    public void onClose() {
-        ModConfig.save();
-        this.minecraft.setScreen(this.parent);
-    }
-
-    @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+    private static Component label(String text, boolean enabled) { return Component.literal(text + ": " + (enabled ? "ON" : "OFF")); }
+    @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta) {
+        extractBackground(graphics, mouseX, mouseY, delta);
+        graphics.centeredText(font, title, width / 2, 15, 0xFFFFFFFF);
         super.extractRenderState(graphics, mouseX, mouseY, delta);
-        graphics.text(
-                this.font,
-                Component.literal("More decimal places = more precise USD values"),
-                this.width / 2 - 100,
-                this.height / 2 - 45,
-                0xFFFFFFFF,
-                true
-        );
     }
+    @Override public void onClose() { ModConfig.save(); if (minecraft != null) minecraft.setScreen(parent); }
+    @Override public boolean isPauseScreen() { return false; }
 }

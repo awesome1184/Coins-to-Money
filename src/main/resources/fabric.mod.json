@@ -3,26 +3,13 @@
   "id": "coins-to-money",
   "version": "${version}",
   "name": "Coins to Money",
-  "description": "Replaces Hypixel SkyBlock coin values with their USD equivalent",
+  "description": "Show SkyBlock coins as instant-buy Booster Cookie and USD equivalents.",
   "environment": "client",
   "entrypoints": {
-    "main": [
-      "com.example.skyblockusd.SkyblockUsdMod"
-    ],
-    "client": [
-      "com.example.skyblockusd.SkyblockUsdModClient"
-    ],
-    "modmenu": [
-      "com.example.skyblockusd.ModMenuIntegration"
-    ]
+    "main": ["com.example.skyblockusd.SkyblockUsdMod"],
+    "client": ["com.example.skyblockusd.SkyblockUsdModClient"],
+    "modmenu": ["com.example.skyblockusd.ModMenuIntegration"]
   },
-  "mixins": [
-    "coins-to-money.mixins.json"
-  ],
-  "depends": {
-    "fabricloader": ">=0.19.5",
-    "fabric-api": ">=0.155.3+26.1.2",
-    "minecraft": "26.1.2",
-    "java": ">=25"
-  }
+  "mixins": ["coins-to-money.mixins.json"],
+  "depends": { "fabricloader": ">=0.19.5", "fabric-api": ">=0.155.3+26.1.2", "minecraft": "26.1.2", "java": ">=25" }
 }

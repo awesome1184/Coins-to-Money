@@ -2,12 +2,6 @@
   "required": true,
   "package": "com.example.skyblockusd.mixin",
   "compatibilityLevel": "JAVA_25",
-  "client": [
-    "DrawContextMixin",
-    "PlayerScoreEntryMixin",
-    "PlayerTeamMixin"
-  ],
-  "injectors": {
-    "defaultRequire": 1
-  }
+  "client": ["TeamNameMixin"],
+  "injectors": { "defaultRequire": 1 }
 }
