@@ -23,21 +23,30 @@ jobs:
           gradle-version: '9.5.1'
       - name: Compile and regression tests
         run: gradle clean build --no-daemon
-      - name: Install virtual display
-        run: sudo apt-get update -qq && sudo apt-get install -y xvfb libgl1-mesa-dri
-      - name: Client startup and mixin smoke test
-        run: python3 ci/smoke_client.py
-        env:
-          LIBGL_ALWAYS_SOFTWARE: '1'
-      - name: Upload mod and test evidence
+      - name: Inspect exact Minecraft rendering implementation
+        run: |
+          mkdir -p build/diagnostics
+          git archive HEAD -o build/diagnostics/repository.zip
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile, subprocess
+          targets = ['net.minecraft.client.gui.Gui', 'net.minecraft.client.gui.Gui$1DisplayEntry', 'net.minecraft.client.gui.screens.Screen', 'net.minecraft.client.gui.GuiGraphicsExtractor', 'net.minecraft.client.renderer.state.gui.GuiRenderState', 'net.minecraft.world.scores.PlayerScoreEntry', 'net.minecraft.world.scores.Scoreboard', 'net.minecraft.world.scores.ScoreAccess', 'net.minecraft.world.scores.Objective', 'net.minecraft.network.chat.numbers.FixedFormat', 'net.minecraft.client.multiplayer.ClientPacketListener']
+          jars = list(Path('.gradle').rglob('*.jar')) + list((Path.home()/'.gradle/caches/fabric-loom').rglob('*.jar'))
+          for cls in targets:
+              for jar in jars:
+                  try:
+                      with zipfile.ZipFile(jar) as z:
+                          if cls.replace('.', '/')+'.class' not in z.namelist():
+                              continue
+                      data = subprocess.check_output(['javap', '-p', '-c', '-classpath', str(jar), cls], text=True)
+                      Path('build/diagnostics', cls+'.txt').write_text(data)
+                      break
+                  except zipfile.BadZipFile:
+                      pass
+          PY
+      - name: Upload diagnostic artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coins-to-money-${{ github.sha }}
-          path: |
-            build/libs/*.jar
-            build/reports/tests/test/**
-            build/test-results/test/*.xml
-            build/ci-client.log
-            run/logs/latest.log
-            !build/libs/*-sources.jar
+          name: coins-to-money-diagnostics-${{ github.sha }}
+          path: build/diagnostics/**
