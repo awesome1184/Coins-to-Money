@@ -24,7 +24,7 @@ with log.open('w') as output:
         raise SystemExit('Client render tests timed out; see build/ci-client.log')
 text = log.read_text(errors='replace')
 print(text[-14000:])
-markers = ('CTM_ROW_TESTS_PASS', 'CTM_RENDER_TESTS_PASS')
+markers = ('CTM_ROW_TESTS_PASS', 'CTM_PURSE_DIAGNOSTIC_PASS', 'CTM_RENDER_TESTS_PASS')
 if process.returncode != 0 or any(marker not in text for marker in markers):
     raise SystemExit('Actual sidebar/settings rendering regression failed')
 print('PASS: transformed vanilla rows, widths, saved settings and 120 real settings/currency/tooltip/blur/sidebar frames')

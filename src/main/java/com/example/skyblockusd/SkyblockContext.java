@@ -27,6 +27,6 @@ public final class SkyblockContext {
         return host.equals("hypixel.net") || host.endsWith(".hypixel.net");
     }
     public static boolean skyblock(Objective sidebar) {
-        return sidebar != null && CoinParser.plain(sidebar.getDisplayName().getString()).toUpperCase(Locale.ROOT).contains("SKYBLOCK");
+        return sidebar != null && VisibleText.plain(sidebar.getDisplayName()).toUpperCase(Locale.ROOT).contains("SKYBLOCK");
     }
 }

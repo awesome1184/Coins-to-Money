@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1
+
+- Fixes the exact live purse row containing the unsupported `§p` marker inside `7,416,701`.
+- Uses Minecraft's own formatted-text decoder for both matching and styled replacements,
+  including unknown codes and component boundaries; no scoreboard arithmetic workaround.
+- Preserves the original gold coins, green equivalents, yellow gain suffix and blank score.
+- Diagnostics now report the installed version and the decoded visible text/parsed purse.
+- Adds exact-diagnostic unit regressions and real-client BlankFormat/team-owner rendering checks.
+
 ## 1.2.0
 
 - Recover a split purse with an incomplete comma group even when its visible tail uses

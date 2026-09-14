@@ -27,7 +27,7 @@ public final class ScoreboardCoinHelper {
     static Row convertRow(Component name, Component value, boolean fixedValue,
                           CookiePriceFetcher.State state, long now, ModConfig config) {
         if (!config.enabled || !config.enablePurse || !state.available(now)) return new Row(name, value);
-        String left = CoinParser.plain(name.getString());
+        String left = VisibleText.plain(name);
         // FixedFormat contains server-provided text, not PlayerScoreEntry.value().
         // Hypixel can put some or ALL of the purse in that separate right column.
         // Some servers encode a numeric tail using StyledFormat (or another NumberFormat),
@@ -36,7 +36,7 @@ public final class ScoreboardCoinHelper {
         boolean incompleteGroup = INCOMPLETE_GROUP.matcher(left).matches();
         if (fixedValue || LABEL_ONLY.matcher(left).matches() || incompleteGroup) {
             Component combined = Component.empty().append(name).append(value);
-            String visible = combined.getString();
+            String visible = VisibleText.plain(combined);
             if (CoinParser.isBalance(visible) && CoinParser.find(visible, true, false).stream().anyMatch(a -> a.end() > left.length())) {
                 Component converted = CoinText.convert(combined, true, false, state, now, config);
                 if (converted != combined) return new Row(converted, Component.empty());
@@ -44,7 +44,7 @@ public final class ScoreboardCoinHelper {
         }
         Component convertedName = CoinParser.isBalance(left) ? CoinText.convert(name, true, false, state, now, config) : name;
         // Leave ordinary numeric ordering scores and all non-currency rows alone.
-        Component convertedValue = fixedValue && CoinParser.isBalance(value.getString())
+        Component convertedValue = fixedValue && CoinParser.isBalance(VisibleText.plain(value))
                 ? CoinText.convert(value, true, false, state, now, config) : value;
         return new Row(convertedName, convertedValue);
     }

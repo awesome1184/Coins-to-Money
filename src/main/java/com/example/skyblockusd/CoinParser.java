@@ -1,5 +1,7 @@
 package com.example.skyblockusd;
 
+import net.minecraft.network.chat.FormattedText;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -16,14 +18,15 @@ public final class CoinParser {
     private static final Pattern BALANCE = Pattern.compile("(?i)\\b(Purse|Piggy(?: Bank)?|Bank|Balance|Coins):\\h*(" + NUMBER + ")(?![\\w.,])");
     private static final Pattern PRICE = Pattern.compile("(?i)\\b(?:Buy price|Sell price|Price per unit|Price|Cost|Starting bid|Top bid|Your bid|BIN price|Buy it now):\\h*(" + NUMBER + ")(?![\\w.,])");
     private static final Pattern OTHER_CURRENCY = Pattern.compile("(?i)^\\h*(?:cookies?|gems?|bits?|copper|motes?|tokens?|essence)\\b");
-    private static final Pattern FORMATTING = Pattern.compile("(?i)§[0-9a-fk-orx]|\\p{Cf}");
     private static final Pattern COOKIE_ANNOTATION = Pattern.compile("\\[[+-]?<?[0-9,.]+ cookies(?:[ |\\]]|$)");
     private static final Pattern LAYOUT_SEPARATOR = Pattern.compile(" \\[| \\(| \\| | = ");
     private static final Pattern EQUIVALENT = Pattern.compile("\\p{Sc}[0-9,.]+|\\b([A-Z]{3}) <?[0-9,.]+|[0-9,.]+ cookies\\b");
     public record Amount(int start, int end, double coins, String source) { }
 
     private CoinParser() { }
-    public static String plain(String value) { return value == null ? "" : FORMATTING.matcher(value).replaceAll(""); }
+    public static String plain(String value) {
+        return value == null ? "" : VisibleText.plain(FormattedText.of(value));
+    }
 
     public static double parseNumber(String value) {
         if (value == null || !VALID_NUMBER.matcher(value).matches()) return Double.NaN;

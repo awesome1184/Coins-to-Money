@@ -4,10 +4,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.util.StringDecomposer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 /** Replace currency spans only, preserving surrounding text, styles and interactions. */
@@ -23,24 +21,22 @@ public final class CoinText {
                              CookiePriceFetcher.State state, long now, ModConfig config) {
         if (original == null || !config.enabled || !state.available(now) || (!config.showUsd && !config.showCookies)) return original;
         String raw = original.getString();
-        if (raw.length() > 16_384 || CoinParser.find(raw, balances, prices).isEmpty()) return original;
+        if (raw.length() > 16_384) return original;
+        // Match the same decoded component runs that will be used for replacements.
+        // A regex over getString() rejected Hypixel's invisible section-p marker and
+        // could pair a trailing section sign with the next component's first digit.
+        var amounts = CoinParser.find(VisibleText.plain(original), balances, prices);
+        if (amounts.isEmpty()) return original;
         // Component siblings and legacy formatting can split a number at ANY digit.
         List<Part> parts = new ArrayList<>();
         StringBuilder text = new StringBuilder();
-        original.visit((style, literal) -> {
-            StringDecomposer.iterateFormatted(literal, style, (index, characterStyle, codepoint) -> {
-                if (Character.getType(codepoint) != Character.FORMAT) {
-                    int start = text.length();
-                    String value = new String(Character.toChars(codepoint));
-                    text.append(value);
-                    parts.add(new Part(start, text.length(), value, characterStyle));
-                }
-                return true;
-            });
-            return Optional.empty();
-        }, Style.EMPTY);
-        var amounts = CoinParser.find(text.toString(), balances, prices);
-        if (amounts.isEmpty()) return original;
+        VisibleText.visit(original, (index, characterStyle, codepoint) -> {
+            int start = text.length();
+            String value = new String(Character.toChars(codepoint));
+            text.append(value);
+            parts.add(new Part(start, text.length(), value, characterStyle));
+            return true;
+        });
         MutableComponent output = Component.empty().withStyle(original.getStyle());
         int cursor = 0;
         boolean changed = false;

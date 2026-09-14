@@ -4,7 +4,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.numbers.BlankFormat;
-import net.minecraft.network.chat.numbers.StyledFormat;
 import net.minecraft.util.StringDecomposer;
 import net.minecraft.world.scores.PlayerScoreEntry;
 import net.minecraft.world.scores.Scoreboard;
@@ -48,7 +47,7 @@ class PurseFormattingRegressionTest {
     @Test void blankFormatDoesNotSupplyTailDigitsOrTheGainAmount() {
         var entry = new PlayerScoreEntry("fixture", 5, Component.literal(RAW), BlankFormat.INSTANCE);
         Component name = ScoreboardCoinHelper.rawName(new Scoreboard(), entry);
-        Component value = entry.formatValue(StyledFormat.SIDEBAR_DEFAULT);
+        Component value = entry.formatValue(BlankFormat.INSTANCE);
         var result = ScoreboardCoinHelper.convertRow(name, value, false,
                 CoinTextTest.LIVE, CoinTextTest.NOW, new ModConfig());
         assertEquals("", value.getString());

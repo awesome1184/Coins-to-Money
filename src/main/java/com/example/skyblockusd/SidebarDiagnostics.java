@@ -3,6 +3,7 @@ package com.example.skyblockusd;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.numbers.StyledFormat;
 import java.util.Locale;
 
@@ -15,7 +16,8 @@ public final class SidebarDiagnostics {
     public static String report(Minecraft client) {
         long now = System.currentTimeMillis();
         JsonObject report = new JsonObject();
-        report.addProperty("version", "1.2.0");
+        report.addProperty("version", FabricLoader.getInstance().getModContainer("coins-to-money")
+                .map(mod -> mod.getMetadata().getVersion().getFriendlyString()).orElse("unknown"));
         report.addProperty("inSkyblock", SkyblockUsdModClient.inSkyblock());
         report.addProperty("sidebarHookCalls", hookCalls);
         report.addProperty("lastHookMillisAgo", lastHookTime == 0 ? -1 : now - lastHookTime);
@@ -36,11 +38,15 @@ public final class SidebarDiagnostics {
             if (entry.isHidden()) continue;
             var name = ScoreboardCoinHelper.rawName(board, entry);
             var value = entry.formatValue(fallback);
-            String visible = CoinParser.plain(name.getString() + value.getString()).toLowerCase(Locale.ROOT);
+            String visibleName = VisibleText.plain(name), visibleValue = VisibleText.plain(value);
+            String visible = (visibleName + visibleValue).toLowerCase(Locale.ROOT);
             if (!(visible.contains("purse") || visible.contains("piggy") || visible.contains("bank") || visible.contains("balance") || visible.contains("coins"))) continue;
             JsonObject row = new JsonObject();
             row.addProperty("name", name.getString());
             row.addProperty("value", value.getString());
+            row.addProperty("visibleName", visibleName);
+            row.addProperty("visibleValue", visibleValue);
+            CoinParser.purse(visibleName + visibleValue).ifPresent(coins -> row.addProperty("parsedPurseCoins", coins));
             row.addProperty("nameCodepoints", codepoints(name.getString()));
             row.addProperty("valueCodepoints", codepoints(value.getString()));
             row.addProperty("rawScore", entry.value());

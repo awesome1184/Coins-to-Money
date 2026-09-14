@@ -68,6 +68,12 @@ numeric column completes an otherwise incomplete comma group, the displayed piec
 joined; a complete left-hand amount never absorbs an ordinary numeric ordering score.
 No multiplication-by-100 guess or server scoreboard mutation is used.
 
+Since 1.2.1, matching and replacement share vanilla's formatted-text decoder. Unsupported
+section-sign pairs such as `§p` are consumed just as Minecraft consumes them; digits on
+either side remain part of the same number. This fixes the diagnostic row
+`Purse: §67,416,7§p§601 §e(+5)` with an empty `BlankFormat` value. Its purse is **7,416,701**;
+`(+5)` is a separate gain suffix, and the raw score of 5 is not part of the balance.
+
 If a live purse still remains unchanged, use **Copy purse diagnostics** while in SkyBlock.
 It copies the currency rows, their format types/codepoints, hook activity and conversion
 settings. It includes displayed balances, but not credentials, chat, or player names from
@@ -85,7 +91,7 @@ Use JDK 25 and Gradle 9.5.1:
 gradle clean build --no-daemon
 ```
 
-Install `build/libs/coins-to-money-1.2.0.jar` with Fabric Loader 0.19.5+ and Fabric API
+Install `build/libs/coins-to-money-1.2.1.jar` with Fabric Loader 0.19.5+ and Fabric API
 0.155.3+26.1.2, replacing the previous JAR. Do not install sources or the smoke-test mod.
 
 CI runs unit regressions, verifies the distribution, and boots an actual Fabric client

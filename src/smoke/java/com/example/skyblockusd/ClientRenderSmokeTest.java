@@ -28,6 +28,7 @@ import java.util.Objects;
 
 /** Loads only in runSmokeClient. Real transformed Gui + real Screen rendering, no Hypixel login. */
 public final class ClientRenderSmokeTest implements ClientModInitializer {
+    private static final String LIVE_PURSE = "Purse: §67,416,7§p§601 §e(+5)";
     private static Method rowFactory;
     private static Method sidebarRenderer;
     private static boolean started;
@@ -109,6 +110,21 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
         assertRow(client, board, entry("Purse: 7,416,611", 8, null), fallback, "Purse: $1.78", "8");
         assertRow(client, board, entry("Purse: 7,416,611", 8, BlankFormat.INSTANCE), fallback, "Purse: $1.78", "");
         assertRow(client, board, entry("Bits: ", 8, fixed("7,120")), fallback, "Bits: ", "7,120");
+        // Exact user diagnostic, with both override and inherited BlankFormat paths.
+        assertRow(client, board, entry(LIVE_PURSE, 5, BlankFormat.INSTANCE), fallback, "Purse: $1.78 (+5)", "");
+        assertRow(client, board, entry(LIVE_PURSE, 5, null), BlankFormat.INSTANCE, "Purse: $1.78 (+5)", "");
+        ModConfig.INSTANCE.showCookies = true; ModConfig.INSTANCE.keepCoins = true;
+        assertRow(client, board, entry(LIVE_PURSE, 5, BlankFormat.INSTANCE), fallback,
+                "Purse: 7,416,701 [$1.78 | 0.603 cookies] (+5)", "");
+        ModConfig.INSTANCE.showCookies = false; ModConfig.INSTANCE.keepCoins = false;
+        var liveTeam = board.addPlayerTeam("live-purse");
+        liveTeam.setPlayerPrefix(Component.literal("Purse: §67,416,7"));
+        liveTeam.setPlayerSuffix(Component.literal("§601 §e(+5)"));
+        board.addPlayerToTeam("§p", liveTeam);
+        assertRow(client, board, new PlayerScoreEntry("§p", 5, null, BlankFormat.INSTANCE), fallback, "Purse: $1.78 (+5)", "");
+        board.removePlayerTeam(liveTeam);
+        check("1.2.1", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
+        SkyblockUsdMod.LOGGER.info("CTM_PURSE_DIAGNOSTIC_PASS: exact section-p row, all 7,416,701 coins, BlankFormat, rawScore=5 unchanged, gain suffix preserved");
         var team = board.addPlayerTeam("team"); team.setPlayerPrefix(Component.literal("Purse: "));
         board.addPlayerToTeam("fixture", team);
         assertRow(client, board, entry("7,416,6", 8, fixed("11")), fallback, "Purse: $1.78", "");
@@ -161,7 +177,9 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
     }
     private static final class FixtureBoard extends Scoreboard {
         @Override public Collection<PlayerScoreEntry> listPlayerScores(Objective objective) {
-            return List.of(entry("Purse: 7,416,6", 11, StyledFormat.SIDEBAR_DEFAULT), new PlayerScoreEntry("bits", 7, Component.literal("Bits: "), fixed("7,120")));
+            return List.of(entry(LIVE_PURSE, 5, BlankFormat.INSTANCE),
+                    new PlayerScoreEntry("split-fixture", 11, Component.literal("Purse: 7,416,6"), StyledFormat.SIDEBAR_DEFAULT),
+                    new PlayerScoreEntry("bits", 7, Component.literal("Bits: "), fixed("7,120")));
         }
     }
     private static final class RenderScreen extends CoinsToMoneyConfigScreen {
@@ -190,7 +208,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
                 sidebarRenderer.invoke(minecraft.gui, graphics, objective);
             } catch (Exception ex) { throw new AssertionError("Actual sidebar render failed", ex); }
             if (++frames == 60) {
-                SkyblockUsdMod.LOGGER.info("CTM_SETTINGS_FRAMES_PASS: 60 settings/tooltip/blur/StyledFormat sidebar frames");
+                SkyblockUsdMod.LOGGER.info("CTM_SETTINGS_FRAMES_PASS: 60 settings/tooltip/blur/live section-p and StyledFormat sidebar frames");
                 minecraft.setScreen(new CurrencyRenderScreen());
             }
         }
