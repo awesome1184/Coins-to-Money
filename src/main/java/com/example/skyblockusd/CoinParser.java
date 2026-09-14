@@ -15,7 +15,7 @@ public final class CoinParser {
     private static final Pattern COINS = Pattern.compile("(?<![\\w.,+$<\u00a3\u20ac-])(" + NUMBER + ")\\h*(?i:coins?)\\b");
     private static final Pattern BALANCE = Pattern.compile("(?i)\\b(Purse|Piggy(?: Bank)?|Bank|Balance|Coins):\\h*(" + NUMBER + ")(?![\\w.,])");
     private static final Pattern PRICE = Pattern.compile("(?i)\\b(?:Buy price|Sell price|Price per unit|Price|Cost|Starting bid|Top bid|Your bid|BIN price|Buy it now):\\h*(" + NUMBER + ")(?![\\w.,])");
-    private static final Pattern OTHER_CURRENCY = Pattern.compile("(?i)^\\h*(?:gems?|bits?|copper|motes?|tokens?|essence)\\b");
+    private static final Pattern OTHER_CURRENCY = Pattern.compile("(?i)^\\h*(?:cookies?|gems?|bits?|copper|motes?|tokens?|essence)\\b");
     private static final Pattern FORMATTING = Pattern.compile("(?i)§[0-9a-fk-orx]|\\p{Cf}");
     private static final Pattern COOKIE_ANNOTATION = Pattern.compile("\\[[+-]?<?[0-9,.]+ cookies(?:[ |\\]]|$)");
     public record Amount(int start, int end, double coins, String source) { }
