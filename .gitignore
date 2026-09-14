@@ -1,6 +1,7 @@
 .gradle/
 build/
 run/
+run-smoke/
 out/
 .idea/
 *.iml

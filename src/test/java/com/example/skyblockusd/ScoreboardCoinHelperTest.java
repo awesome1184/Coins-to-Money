@@ -7,6 +7,7 @@ import net.minecraft.network.chat.numbers.NumberFormat;
 import net.minecraft.network.chat.numbers.StyledFormat;
 import net.minecraft.world.scores.PlayerScoreEntry;
 import net.minecraft.world.scores.Scoreboard;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,6 +15,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class ScoreboardCoinHelperTest {
     private static final long NOW = 1_800_000_000_000L;
     private static final CookiePriceFetcher.State LIVE = new CookiePriceFetcher.State(new BazaarQuote(10_000_000, NOW), null);
+    @BeforeAll static void bootstrapMinecraftCodecs() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+        net.minecraft.server.Bootstrap.bootStrap();
+    }
     @BeforeEach void defaults() { ModConfig.INSTANCE = new ModConfig(); }
     private ScoreboardCoinHelper.Row row(String left, String right) {
         var format = new FixedFormat(Component.literal(right));

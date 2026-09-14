@@ -1,5 +1,6 @@
-package com.example.skyblockusd.smoke;
+package com.example.skyblockusd.smoke.mixin;
 
+import com.example.skyblockusd.smoke.ClientSmoke;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Mixin;
