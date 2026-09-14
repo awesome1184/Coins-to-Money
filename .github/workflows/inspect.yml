@@ -1,0 +1,46 @@
+name: Inspect client API
+on:
+  push:
+    branches: [fix/purse-formats-currency]
+    paths: [.github/workflows/inspect.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.1'
+      - run: gradle build --no-daemon
+      - shell: bash
+        run: |
+          mkdir -p build/inspect
+          git archive --format=zip HEAD -o build/inspect/repository.zip
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile, subprocess
+          classes = ['net.minecraft.client.gui.components.EditBox', 'net.minecraft.client.gui.components.Tooltip', 'net.minecraft.client.gui.components.AbstractWidget', 'net.minecraft.client.KeyboardHandler', 'net.minecraft.client.gui.Gui', 'net.minecraft.client.gui.Gui$1DisplayEntry', 'net.minecraft.network.chat.Style', 'net.minecraft.util.StringDecomposer']
+          todo = set(classes)
+          for root in [Path.home()/'.gradle/caches/fabric-loom', Path('.gradle')]:
+              for jar in root.rglob('*.jar'):
+                  try:
+                      with zipfile.ZipFile(jar) as z: names = set(z.namelist())
+                      for cls in list(todo):
+                          if cls.replace('.', '/')+'.class' in names:
+                              out = subprocess.check_output(['javap','-classpath',str(jar),'-p','-c',cls],text=True)
+                              Path('build/inspect',cls+'.txt').write_text(out)
+                              todo.remove(cls)
+                  except zipfile.BadZipFile: pass
+          if todo: raise SystemExit(str(todo))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ctm-development-sources
+          path: build/inspect/*
