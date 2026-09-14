@@ -29,11 +29,20 @@ jobs:
         run: python3 ci/smoke_client.py
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
-      - name: Published CustomScoreboard compatibility tests
-        run: python3 ci/smoke_client.py
+      - name: Install verified optional test mods
+        run: python3 ci/integration_dependencies.py
+      - name: Current CustomScoreboard integration
+        run: python3 ci/smoke_client.py custom
         env:
           LIBGL_ALWAYS_SOFTWARE: '1'
-          CTM_CUSTOMSCOREBOARD: '1'
+      - name: SkyHanni integration
+        run: python3 ci/smoke_client.py hanni
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+      - name: Combined CustomScoreboard and SkyHanni integration
+        run: python3 ci/smoke_client.py both
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
       - name: Source snapshot
         if: always()
         run: git archive --format=zip HEAD -o build/source-snapshot.zip
@@ -48,8 +57,8 @@ jobs:
               with zipfile.ZipFile(jar) as z:
                   assert not any('SmokeTest' in name for name in z.namelist())
                   assert json.loads(z.read('fabric.mod.json'))['id'] == 'coins-to-money'
-                  assert json.loads(z.read('coins-to-money.mixins.json'))['client'] == ['SidebarMixin', 'CustomScoreboardNumberMixin', 'CustomScoreboardLineMixin', 'CustomScoreboardChunkMixin']
-                  assert not any(name.startswith(('kotlin/', 'me/owdding/')) for name in z.namelist())
+                  assert json.loads(z.read('coins-to-money.mixins.json'))['client'] == ['SidebarMixin', 'CustomScoreboardNumberMixin', 'CustomScoreboardLineMixin', 'CustomScoreboardChunkMixin', 'SkyHanniCoinMixin', 'SkyHanniCropMixin', 'SkyHanniStringMixin', 'SkyHanniTextMixin']
+                  assert not any(name.startswith(('kotlin/', 'me/owdding/', 'at/hannibal2/')) for name in z.namelist())
               digest = hashlib.sha256(jar.read_bytes()).hexdigest()
               Path('build/SHA256SUMS').write_text(digest + '  ' + jar.name + '\n')
               print(digest, jar.name)
@@ -64,9 +73,11 @@ jobs:
             build/reports/tests/test/**
             build/test-results/test/*.xml
             build/ci-client.log
-            build/ci-customscoreboard.log
-            build/smoke-run/logs/latest.log
-            build/smoke-run/crash-reports/*.txt
+            build/ci-custom.log
+            build/ci-hanni.log
+            build/ci-both.log
+            build/smoke-*/logs/latest.log
+            build/smoke-*/crash-reports/*.txt
             build/SHA256SUMS
             build/source-snapshot.zip
             !build/libs/*-sources.jar

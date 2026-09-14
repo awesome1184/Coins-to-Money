@@ -28,6 +28,7 @@ public final class SkyblockUsdModClient implements ClientModInitializer {
             }
             while (toggleKey.consumeClick()) { ModConfig.INSTANCE.enabled = !ModConfig.INSTANCE.enabled; ModConfig.save(); }
             CookiePriceFetcher.setActive(skyblock && ModConfig.INSTANCE.enabled);
+            SkyHanniCompat.tick();
         });
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> CookiePriceFetcher.stop());
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
@@ -40,7 +41,8 @@ public final class SkyblockUsdModClient implements ClientModInitializer {
         });
     }
     private static void updateContext(Minecraft client) {
-        skyblock = SkyblockContext.hypixel(client) && SkyblockContext.skyblock(
-                SkyblockContext.sidebar(client.level.getScoreboard(), client.player.getScoreboardName()));
+        skyblock = NativeModApis.customSkyblock() || NativeModApis.hanniSkyblock()
+                || (SkyblockContext.hypixel(client) && SkyblockContext.skyblock(
+                SkyblockContext.sidebar(client.level.getScoreboard(), client.player.getScoreboardName())));
     }
 }

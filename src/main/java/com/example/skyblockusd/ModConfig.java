@@ -20,6 +20,7 @@ public final class ModConfig {
     public boolean enablePurse = true;
     public boolean enableTooltips = true;
     public boolean enableChat = true;
+    public boolean enableSkyHanni = true;
     public boolean showUsd = true;
     public boolean showCookies = false;
     public boolean keepCoins = false;

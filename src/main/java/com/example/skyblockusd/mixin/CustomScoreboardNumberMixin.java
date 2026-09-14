@@ -16,4 +16,9 @@ public abstract class CustomScoreboardNumberMixin {
     private Component coinsToMoney$number(Component number, Component label, Component original, int color) {
         return CustomScoreboardCompat.number(label, number);
     }
+    @ModifyVariable(method = "formatNumberDisplayDisplay(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;",
+            at = @At("HEAD"), argsOnly = true, ordinal = 1, require = 0)
+    private String coinsToMoney$stringNumber(String number, String label, String original, String color) {
+        return CustomScoreboardCompat.stringNumber(label, number);
+    }
 }

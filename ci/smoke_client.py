@@ -1,32 +1,26 @@
-"""Exercise actual transformed sidebar rows and 120 settings/currency frames in a real Fabric client.
-Uses only synthetic fixtures; no Minecraft account or live Hypixel connection is required.
-"""
-import os
+"""Run actual client integrations, not substitute classes or mocked renderers."""
+import os, signal, subprocess, sys
 from pathlib import Path
-import signal
-import subprocess
-import time
-
-compat = os.environ.get('CTM_CUSTOMSCOREBOARD') == '1'
-log = Path('build/ci-customscoreboard.log' if compat else 'build/ci-client.log')
+mode = sys.argv[1] if len(sys.argv) > 1 else 'base'
+if mode not in ('base', 'custom', 'hanni', 'both'): raise SystemExit('Unknown test mode')
+log = Path('build/ci-client.log' if mode == 'base' else 'build/ci-' + mode + '.log')
 log.parent.mkdir(exist_ok=True)
+command = ['xvfb-run', '-a', 'gradle', 'runSmokeClient', '--no-daemon']
+if mode != 'base': command += ['-PintegrationTest=' + mode]
 with log.open('w') as output:
-    process = subprocess.Popen(['xvfb-run', '-a', 'gradle', 'runSmokeClient', '--no-daemon'] + (['-PcustomScoreboardTest'] if compat else []),
-                               stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
-    try:
-        process.wait(timeout=360)
+    process = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+    try: process.wait(timeout=420)
     except subprocess.TimeoutExpired:
         os.killpg(process.pid, signal.SIGTERM)
-        try:
-            process.wait(timeout=15)
+        try: process.wait(timeout=15)
         except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
-            process.wait()
-        raise SystemExit('Client render tests timed out; see build/ci-client.log')
+            os.killpg(process.pid, signal.SIGKILL); process.wait()
+        raise SystemExit('Client integration timed out: ' + str(log))
 text = log.read_text(errors='replace')
-print(text[-14000:])
-markers = ('CTM_ROW_TESTS_PASS', 'CTM_PURSE_DIAGNOSTIC_PASS', 'CTM_RENDER_TESTS_PASS')
-markers += ('CTM_RESOURCE_COSTS_PASS', 'CTM_CUSTOMSCOREBOARD_PASS' if compat else 'CTM_OPTIONAL_COMPAT_ABSENT_PASS')
-if process.returncode != 0 or any(marker not in text for marker in markers):
-    raise SystemExit('Actual sidebar/settings rendering regression failed')
-print('PASS: transformed vanilla rows, widths, saved settings and 120 real settings/currency/tooltip/blur/sidebar frames')
+print(text[-18000:])
+markers = ['CTM_ROW_TESTS_PASS', 'CTM_PURSE_DIAGNOSTIC_PASS', 'CTM_RENDER_TESTS_PASS', 'CTM_RESOURCE_COSTS_PASS']
+if mode in ('custom', 'both'): markers.append('CTM_CUSTOMSCOREBOARD_PASS')
+if mode in ('hanni', 'both'): markers.append('CTM_SKYHANNI_PASS')
+if mode == 'base': markers.append('CTM_OPTIONAL_COMPAT_ABSENT_PASS')
+if process.returncode or any(m not in text for m in markers): raise SystemExit('Failed integration: ' + mode)
+print('PASS: actual client integration', mode)

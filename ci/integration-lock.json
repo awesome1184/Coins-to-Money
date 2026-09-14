@@ -1,0 +1,38 @@
+[
+  {
+    "project": "fpb5uaJt",
+    "version": "1.12.14-2",
+    "version_id": "5VSiG5l7",
+    "filename": "CustomScoreboard-1.12.14-2-26.1.jar",
+    "url": "https://cdn.modrinth.com/data/fpb5uaJt/versions/5VSiG5l7/CustomScoreboard-1.12.14-2-26.1.jar",
+    "sha512": "108bc67c5efe886a4dd1a77d7a39b86850f00591c94288753d02433093fc46e534fbc85d99fd73985ab8fd8211f50f412dddb2f5e448aff6b7741f99efe8ba9f",
+    "modes": ["custom", "both"]
+  },
+  {
+    "project": "byNkmv5G",
+    "version": "7.56.0",
+    "version_id": "MnRBvQlm",
+    "filename": "SkyHanni-7.56.0-mc26.1.jar",
+    "url": "https://cdn.modrinth.com/data/byNkmv5G/versions/MnRBvQlm/SkyHanni-7.56.0-mc26.1.jar",
+    "sha512": "96cd7f61e9ce60bf6fafefd49a664b077cb002a86882f9ab5d52af79edbfb61e98b63be0d975b736e06318b9277c60ec77e0641050e80766bb47c32fd4b2af02",
+    "modes": ["hanni", "both"]
+  },
+  {
+    "project": "Ha28R6CL",
+    "version": "1.14.1+kotlin.2.4.20",
+    "version_id": "eRRZzGMc",
+    "filename": "fabric-language-kotlin-1.14.1+kotlin.2.4.20.jar",
+    "url": "https://cdn.modrinth.com/data/Ha28R6CL/versions/eRRZzGMc/fabric-language-kotlin-1.14.1%2Bkotlin.2.4.20.jar",
+    "sha512": "91404f87774466ce8604aafea791d8cc97b603bc310dce17c8188f94f7783cca6dc14fc726ce871ca317bfe9033c199d8d858d51284106a00754e952147703b8",
+    "modes": ["custom", "hanni", "both"]
+  },
+  {
+    "project": "1A2mKfBx",
+    "version": "1.0.2+build.1+mc26.1",
+    "version_id": "SlqCF6Or",
+    "filename": "HypixelModAPI-1.0.2+build.1+mc26.1.jar",
+    "url": "https://cdn.modrinth.com/data/1A2mKfBx/versions/SlqCF6Or/HypixelModAPI-1.0.2%2Bbuild.1%2Bmc26.1.jar",
+    "sha512": "ceb4cf37edf3e263801d23d80f88f331798133d8facc56b2501b2f5f86e32d7cea7a94356b1cf29865cae20fb07a50f4765a35180af265d708e05cea976a3fe8",
+    "modes": ["hanni", "both"]
+  }
+]

@@ -30,19 +30,36 @@ public final class CoinText {
         return replace(original, amounts, state, now, config);
     }
 
-    /** For typed integrations only: the caller must KNOW this value is SkyBlock coins. */
+    /** Only call this for values already known to be coins. Keeps localized/compact
+     * original text but computes from the unrounded, read-only source amount. */
+    public static Component convertKnownCoinValue(Component original, double coins) {
+        return convertKnownCoinValue(original, coins, CookiePriceFetcher.state(), System.currentTimeMillis(), ModConfig.INSTANCE);
+    }
+    static Component convertKnownCoinValue(Component original, double coins,
+            CookiePriceFetcher.State state, long now, ModConfig config) {
+        if (original == null || !config.enabled || !state.available(now)
+                || (!config.showUsd && !config.showCookies) || !Double.isFinite(coins)) return original;
+        String text = VisibleText.plain(original);
+        if (text.length() > 16_384 || CoinParser.isAnnotated(text)) return original;
+        var matcher = KNOWN_VALUE.matcher(text);
+        if (!matcher.matches()) return original;
+        return replace(original, List.of(new CoinParser.Amount(matcher.start(1), matcher.end(1), coins, matcher.group(1))), state, now, config);
+    }
+    /** Fallback for an older optional API: only accept a complete US-format value. */
     public static Component convertKnownCoinValue(Component original) {
-        var state = CookiePriceFetcher.state();
-        long now = System.currentTimeMillis();
-        var config = ModConfig.INSTANCE;
+        if (original == null) return null;
+        var matcher = KNOWN_VALUE.matcher(VisibleText.plain(original));
+        return matcher.matches() ? convertKnownCoinValue(original, CoinParser.parseNumber(matcher.group(1))) : original;
+    }
+    private static final Pattern KNOWN_VALUE = Pattern.compile(
+            "^\\h*([+-]?[0-9]+(?:[.,'’\\h][0-9]+)*[kKmMbBtTqQ]?)(?:\\h*\\([+-][0-9.,'’\\hkKmMbBtTqQ]+\\))?\\h*$");
+
+    static Component convertProfitText(Component original) {
+        var state = CookiePriceFetcher.state(); long now = System.currentTimeMillis(); var config = ModConfig.INSTANCE;
         if (original == null || !config.enabled || !state.available(now) || (!config.showUsd && !config.showCookies)) return original;
-        String plain = VisibleText.plain(original);
-        if (plain.length() > 16_384) return original;
-        String prefix = "Purse: ";
-        var amounts = CoinParser.find(prefix + plain, true, false).stream()
-                .filter(a -> a.start() == prefix.length())
-                .map(a -> new CoinParser.Amount(0, a.end() - prefix.length(), a.coins(), a.source())).toList();
-        return amounts.isEmpty() ? original : replace(original, amounts, state, now, config);
+        String text = VisibleText.plain(original);
+        if (text.length() > 16_384) return original;
+        return replace(original, ProfitText.find(text), state, now, config);
     }
 
     private static Component replace(Component original, List<CoinParser.Amount> amounts,
@@ -64,7 +81,7 @@ public final class CoinText {
             CoinConversion value;
             try {
                 value = CoinConversion.of(amount.coins(), state.quote().instantBuyPrice());
-                if (config.showUsd) value.moneyText(config); // Fail closed on invalid manual rates/overflow.
+                if (config.showUsd) value.moneyText(config);
             }
             catch (IllegalArgumentException ex) { continue; }
             if (amount.start() < cursor) continue;

@@ -7,12 +7,14 @@ import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import java.util.List;
 import java.util.Set;
 
-/** Do not link Kotlin or optional mod classes when CustomScoreboard is absent. */
+/** Optional targets must not link when their owning mod is absent. */
 public final class CompatibilityPlugin implements IMixinConfigPlugin {
     @Override public void onLoad(String mixinPackage) { }
     @Override public String getRefMapperConfig() { return null; }
     @Override public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return !mixinClassName.contains("CustomScoreboard") || FabricLoader.getInstance().isModLoaded("customscoreboard");
+        if (mixinClassName.contains("CustomScoreboard")) return FabricLoader.getInstance().isModLoaded("customscoreboard");
+        if (mixinClassName.contains("SkyHanni")) return FabricLoader.getInstance().isModLoaded("skyhanni");
+        return true;
     }
     @Override public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) { }
     @Override public List<String> getMixins() { return null; }
