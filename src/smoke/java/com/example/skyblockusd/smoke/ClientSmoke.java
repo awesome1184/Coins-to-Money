@@ -13,7 +13,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.numbers.*;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.scores.*;
 import net.minecraft.world.scores.criteria.ObjectiveCriteria;
@@ -38,6 +37,8 @@ public final class ClientSmoke implements ClientModInitializer {
             sidebarRenderer = Gui.class.getDeclaredMethod("displayScoreboardSidebar", GuiGraphicsExtractor.class, Objective.class);
             sidebarRenderer.setAccessible(true);
         } catch (ReflectiveOperationException ex) { throw new AssertionError("Rendering contracts changed", ex); }
+        System.out.println("CTM_X_DISPLAY=" + System.getenv("DISPLAY"));
+        System.out.println("CTM_X_AUTHORITY=" + System.getenv("XAUTHORITY"));
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ticks++;
             if (phase == 0 && ticks > 80 && client.screen != null) {
@@ -112,6 +113,10 @@ public final class ClientSmoke implements ClientModInitializer {
         Object ordinary = map(client, "Purse: 7,014,556", "", StyledFormat.SIDEBAR_DEFAULT);
         check(((Component) field(ordinary, "score")).getString().equals("8"), "Ordinary ordering score was suppressed");
         check(((Component) field(ordinary, "name")).getString().equals("Purse: $2.07"), "Ordering score was appended to currency");
+        Object tail = map(client, "Purse: 7,416,61", "", StyledFormat.SIDEBAR_DEFAULT);
+        check(((Component) field(tail, "name")).getString().equals("Purse: $2.19"), "Ordinary visible tail was not joined");
+        check(((Component) field(tail, "score")).getString().isEmpty(), "Converted tail was left behind");
+        check((int) field(tail, "scoreWidth") == 0, "Converted tail width was left behind");
         List<Component> lines = tooltip();
         check(lines.get(1).getString().equals("Worth $4.02"), "Real tooltip callback did not replace the total");
         check(lines.get(3).getString().equals("Price per unit: $0.02"), "Real tooltip callback did not replace per-unit price");
@@ -127,7 +132,9 @@ public final class ClientSmoke implements ClientModInitializer {
                 Component.literal("Worth 13.6M coins").withStyle(ChatFormatting.GRAY),
                 Component.literal("Offer amount: 246x").withStyle(ChatFormatting.GRAY),
                 Component.literal("Price per unit: ").withStyle(ChatFormatting.GRAY).append(Component.literal("57,716.6 coins").withStyle(ChatFormatting.GOLD))));
-        ItemTooltipCallback.EVENT.invoker().getTooltip(new ItemStack(Items.STONE), Item.TooltipContext.EMPTY, TooltipFlag.NORMAL, lines);
+        // This text-only callback does not inspect the stack. EMPTY avoids requiring a world's
+        // data-driven item components while exercising the real registered tooltip callback.
+        ItemTooltipCallback.EVENT.invoker().getTooltip(ItemStack.EMPTY, Item.TooltipContext.EMPTY, TooltipFlag.NORMAL, lines);
         return lines;
     }
     private static final class FixtureScreen extends Screen {

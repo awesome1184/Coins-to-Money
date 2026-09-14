@@ -1,8 +1,9 @@
-"""Exercise actual enabled sidebar/tooltip hooks and render the real settings screen.
-Run this script inside xvfb-run. A startup log message alone is not a passing test.
+"""Exercise enabled sidebar/tooltip hooks and render the real settings screen.
+Run inside xvfb-run. A startup log message alone is not a passing test.
 """
 from pathlib import Path
 import os
+import re
 import signal
 import subprocess
 import time
@@ -23,7 +24,13 @@ with log.open('w') as output:
             text = log.read_text(errors='replace')
             for marker, path in markers.items():
                 if marker in text and marker not in captured:
-                    subprocess.run(['import', '-window', 'root', path], check=True, timeout=15)
+                    # Loom can start a nested Xvfb. Capture the display used by Minecraft,
+                    # not an empty outer display. These values come from our test mod.
+                    env = dict(os.environ)
+                    for key, label in [('DISPLAY', 'CTM_X_DISPLAY'), ('XAUTHORITY', 'CTM_X_AUTHORITY')]:
+                        match = re.search(re.escape(label) + r'=([^\s]+)', text)
+                        if match and match.group(1) != 'null': env[key] = match.group(1)
+                    subprocess.run(['import', '-window', 'root', path], env=env, check=True, timeout=15)
                     captured.add(marker)
             time.sleep(.25)
         if process.poll() is None:

@@ -25,15 +25,16 @@ public final class ScoreboardCoinHelper {
         String left = CoinParser.plain(name.getString());
         var label = LABEL.matcher(left);
         NumberFormat format = entry.numberFormatOverride() == null ? fallback : entry.numberFormatOverride();
-        // FixedFormat stores arbitrary server-supplied text. Its digits need not match entry.value().
-        // An ordinary numeric score is only currency when the name contains a bare currency label.
+        // FixedFormat is arbitrary visible text, not the ordering integer. An ordinary score
+        // may complete a bare label or an incomplete comma group, but must not be appended
+        // to a complete, valid balance. The joined visible amount still has to parse in full.
         if (label.find() && !score.getString().isEmpty()
-                && (format instanceof FixedFormat || label.end() == left.length())
+                && (format instanceof FixedFormat || !CoinParser.isBalance(left))
                 && left.indexOf('$') < 0) {
             Component joined = Component.empty().append(name).append(score);
             Component converted = CoinText.replace(joined, true, false, state, now);
             if (converted != joined) return new Row(converted, Component.empty());
-            return new Row(name, score); // malformed/incomplete joined amounts must remain untouched
+            return new Row(name, score);
         }
         return new Row(CoinText.replace(name, true, false, state, now),
                 CoinText.replace(score, true, false, state, now));
