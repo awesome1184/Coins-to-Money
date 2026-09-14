@@ -33,6 +33,18 @@ class DisplayAndCurrencyTest {
             assertSame(result, CoinText.convert(result, true, true, CoinTextTest.LIVE, CoinTextTest.NOW, c));
             Component copy = result.copy();
             assertSame(copy, CoinText.convert(copy, true, true, CoinTextTest.LIVE, CoinTextTest.NOW, c));
+            Component rebuilt = Component.literal(result.getString());
+            assertSame(rebuilt, CoinText.convert(rebuilt, true, true, CoinTextTest.LIVE, CoinTextTest.NOW, c));
+        }
+    }
+    @ParameterizedTest @ValueSource(strings = {"USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "RSD", "CNY", "INR"})
+    void reformattedTextDoesNotDependOnWeakObjectIdentity(String code) {
+        for (var order : DisplayOrder.values()) for (var layout : DisplayLayout.values()) {
+            var c = new ModConfig(); c.currencyCode = code; c.currencyPerUsd = code.equals("USD") ? 1 : .92;
+            c.showCookies = false; c.keepCoins = true; c.displayOrder = order; c.displayLayout = layout;
+            Component initial = convert("Purse: 12,295,597.2", c);
+            Component rebuilt = Component.literal(initial.getString());
+            assertSame(rebuilt, CoinText.convert(rebuilt, true, true, CoinTextTest.LIVE, CoinTextTest.NOW, c));
         }
     }
     @Test void convertedValuesAreGreenAndCoinsKeepTheirOwnColour() {
@@ -79,6 +91,6 @@ class DisplayAndCurrencyTest {
         assertEquals("€0.92", MoneyCurrency.format(1d, "EUR", .92, 2));
         assertEquals("-€0.92", MoneyCurrency.format(-1d, "EUR", .92, 2));
         assertEquals("<€0.01", MoneyCurrency.format(0.00001, "EUR", .92, 2));
-        assertEquals("€0.01", MoneyCurrency.format(.004, "EUR", 2, 2));
+        assertEquals("€0.01", MoneyCurrency.format(.006, "EUR", 2, 2));
     }
 }

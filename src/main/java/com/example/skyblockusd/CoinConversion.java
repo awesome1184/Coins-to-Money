@@ -20,11 +20,6 @@ public record CoinConversion(double cookies, double usd) {
     }
 
     public String display() { return cookieText(3) + " | " + usdText(2); }
-    public String display(ModConfig config) {
-        if (config.showUsd && config.showCookies) return usdText(config.decimalPlaces) + " | " + cookieText(config.cookieDecimalPlaces);
-        if (config.showCookies) return cookieText(config.cookieDecimalPlaces);
-        return usdText(config.decimalPlaces);
-    }
     public String moneyText(ModConfig config) {
         return MoneyCurrency.format(usd, config.currencyCode, config.currencyPerUsd, config.decimalPlaces);
     }

@@ -8,16 +8,11 @@ import net.minecraft.util.StringDecomposer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.Collections;
 import java.util.regex.Pattern;
 
 /** Replace currency spans only, preserving surrounding text, styles and interactions. */
 public final class CoinText {
     private static final Pattern COIN_UNIT = Pattern.compile("(?i)^\\h*coins?\\b");
-    // Weak keys avoid retaining old chat/tooltips. No invisible text or interaction metadata is added.
-    private static final Map<Component, Boolean> GENERATED = Collections.synchronizedMap(new WeakHashMap<>());
     private record Part(int start, int end, String text, Style style) { }
     private CoinText() { }
 
@@ -27,7 +22,6 @@ public final class CoinText {
     static Component convert(Component original, boolean balances, boolean prices,
                              CookiePriceFetcher.State state, long now, ModConfig config) {
         if (original == null || !config.enabled || !state.available(now) || (!config.showUsd && !config.showCookies)) return original;
-        if (GENERATED.containsKey(original)) return original;
         String raw = original.getString();
         if (raw.length() > 16_384 || CoinParser.find(raw, balances, prices).isEmpty()) return original;
         // Component siblings and legacy formatting can split a number at ANY digit.
@@ -85,7 +79,6 @@ public final class CoinText {
         }
         if (!changed) return original;
         appendRange(output, parts, cursor, text.length());
-        GENERATED.put(output, Boolean.TRUE);
         return output;
     }
     private static Style styleAt(List<Part> parts, int position) {

@@ -18,6 +18,8 @@ public final class CoinParser {
     private static final Pattern OTHER_CURRENCY = Pattern.compile("(?i)^\\h*(?:cookies?|gems?|bits?|copper|motes?|tokens?|essence)\\b");
     private static final Pattern FORMATTING = Pattern.compile("(?i)§[0-9a-fk-orx]|\\p{Cf}");
     private static final Pattern COOKIE_ANNOTATION = Pattern.compile("\\[[+-]?<?[0-9,.]+ cookies(?:[ |\\]]|$)");
+    private static final Pattern LAYOUT_SEPARATOR = Pattern.compile(" \\[| \\(| \\| | = ");
+    private static final Pattern EQUIVALENT = Pattern.compile("\\p{Sc}[0-9,.]+|\\b([A-Z]{3}) <?[0-9,.]+|[0-9,.]+ cookies\\b");
     public record Amount(int start, int end, double coins, String source) { }
 
     private CoinParser() { }
@@ -76,8 +78,18 @@ public final class CoinParser {
 
     public static boolean isBalance(String input) { return BALANCE.matcher(plain(input)).find(); }
     public static boolean isAnnotated(String input) {
-        return input.contains(" cookies | $") || input.contains(" [$") || input.contains(" [<$")
+        if (input.contains(" cookies | $") || input.contains(" [$") || input.contains(" [<$")
                 || input.contains(" [-$") || input.contains(" [-<$")
-                || COOKIE_ANNOTATION.matcher(input).find();
+                || COOKIE_ANNOTATION.matcher(input).find()) return true;
+        // Recognize our visible equivalents even after a component is copied, serialized,
+        // or rebuilt. This is independent of object identity and of the current currency.
+        if (!LAYOUT_SEPARATOR.matcher(input).find()) return false;
+        Matcher marker = EQUIVALENT.matcher(input);
+        while (marker.find()) {
+            if (marker.group(1) == null) return true;
+            try { MoneyCurrency.code(marker.group(1)); return true; }
+            catch (IllegalArgumentException ignored) { } // BIN / RNG are not money currencies.
+        }
+        return false;
     }
 }

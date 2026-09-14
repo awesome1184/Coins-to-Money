@@ -24,7 +24,7 @@ public final class SkyblockUsdModClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             updateContext(client);
             while (configKey.consumeClick()) {
-                if (!(client.screen instanceof CoinsToMoneyConfigScreen)) client.setScreen(new CoinsToMoneyConfigScreen(client.screen));
+                if (!(client.screen instanceof CoinsToMoneyConfigScreen) && !(client.screen instanceof CurrencyConfigScreen)) client.setScreen(new CoinsToMoneyConfigScreen(client.screen));
             }
             while (toggleKey.consumeClick()) { ModConfig.INSTANCE.enabled = !ModConfig.INSTANCE.enabled; ModConfig.save(); }
             CookiePriceFetcher.setActive(skyblock && ModConfig.INSTANCE.enabled);
