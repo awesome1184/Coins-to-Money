@@ -2,6 +2,14 @@
   "required": true,
   "package": "com.example.skyblockusd.mixin",
   "compatibilityLevel": "JAVA_25",
-  "client": ["SidebarMixin"],
-  "injectors": { "defaultRequire": 1 }
+  "client": [
+    "SidebarMixin",
+    "CustomScoreboardNumberMixin",
+    "CustomScoreboardLineMixin",
+    "CustomScoreboardChunkMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "plugin": "com.example.skyblockusd.mixin.CompatibilityPlugin"
 }

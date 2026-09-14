@@ -7,6 +7,7 @@ group = 'com.example'
 base { archivesName = 'coins-to-money' }
 repositories {
     mavenCentral()
+    maven { url "https://api.modrinth.com/maven"; content { includeGroup "maven.modrinth" } }
     maven { url 'https://maven.terraformersmc.com/' }
 }
 dependencies {
@@ -15,6 +16,12 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
     compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
     runtimeOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    // Only optional mixin bytecode references Kotlin. Never bundle it or require it to play.
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib:2.3.20'
+    if (project.hasProperty('customScoreboardTest')) {
+        runtimeOnly 'maven.modrinth:fpb5uaJt:9ZQ8S1sQ'
+        runtimeOnly 'net.fabricmc:fabric-language-kotlin:1.13.10+kotlin.2.3.20'
+    }
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

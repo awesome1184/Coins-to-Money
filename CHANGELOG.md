@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.2
+
+- Stops treating Mana Cost, Soulflow Cost and other compound resource labels as coin prices.
+- Bare price fields reject resource units, stat glyphs, percentages and other ambiguous suffixes.
+- Explicit coin prices remain supported, including mixed coins/resource purchases.
+- Adds optional meowdding CustomScoreboard purse/piggy, chunked purse and Hypixel Lines integration before layout; no data mutation or global text hook.
+- Keeps money/cookies green, gain text intact, existing display options and no standalone HUD.
+- Adds price-context regressions and real-client tests with and without published CustomScoreboard 1.12.11.
+
 ## 1.2.1
 
 - Fixes the exact live purse row containing the unsupported `§p` marker inside `7,416,701`.
@@ -23,7 +32,6 @@
   Currency edits apply atomically; cancel discards changes. No FX API or invented rates.
 - Extend unit regressions and real-client testing for StyledFormat, coloured sidebars,
   all order/layout/visibility combinations, green output, tooltips and currency editing.
-
 
 ## 1.1.1
 

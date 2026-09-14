@@ -27,6 +27,26 @@ public final class CoinText {
         // could pair a trailing section sign with the next component's first digit.
         var amounts = CoinParser.find(VisibleText.plain(original), balances, prices);
         if (amounts.isEmpty()) return original;
+        return replace(original, amounts, state, now, config);
+    }
+
+    /** For typed integrations only: the caller must KNOW this value is SkyBlock coins. */
+    public static Component convertKnownCoinValue(Component original) {
+        var state = CookiePriceFetcher.state();
+        long now = System.currentTimeMillis();
+        var config = ModConfig.INSTANCE;
+        if (original == null || !config.enabled || !state.available(now) || (!config.showUsd && !config.showCookies)) return original;
+        String plain = VisibleText.plain(original);
+        if (plain.length() > 16_384) return original;
+        String prefix = "Purse: ";
+        var amounts = CoinParser.find(prefix + plain, true, false).stream()
+                .filter(a -> a.start() == prefix.length())
+                .map(a -> new CoinParser.Amount(0, a.end() - prefix.length(), a.coins(), a.source())).toList();
+        return amounts.isEmpty() ? original : replace(original, amounts, state, now, config);
+    }
+
+    private static Component replace(Component original, List<CoinParser.Amount> amounts,
+                                     CookiePriceFetcher.State state, long now, ModConfig config) {
         // Component siblings and legacy formatting can split a number at ANY digit.
         List<Part> parts = new ArrayList<>();
         StringBuilder text = new StringBuilder();

@@ -44,6 +44,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
                 sidebarRenderer.setAccessible(true);
                 seed();
                 rows(client);
+                TooltipAndCompatSmokeTest.run(client);
                 var screen = new RenderScreen();
                 client.setScreen(screen);
                 click(screen, "Show cookies:"); check(true, ModConfig.INSTANCE.showCookies);
@@ -123,7 +124,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
         board.addPlayerToTeam("§p", liveTeam);
         assertRow(client, board, new PlayerScoreEntry("§p", 5, null, BlankFormat.INSTANCE), fallback, "Purse: $1.78 (+5)", "");
         board.removePlayerTeam(liveTeam);
-        check("1.2.1", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
+        check("1.2.2", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
         SkyblockUsdMod.LOGGER.info("CTM_PURSE_DIAGNOSTIC_PASS: exact section-p row, all 7,416,701 coins, BlankFormat, rawScore=5 unchanged, gain suffix preserved");
         var team = board.addPlayerTeam("team"); team.setPlayerPrefix(Component.literal("Purse: "));
         board.addPlayerToTeam("fixture", team);
@@ -207,6 +208,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
                 setStatic(SkyblockUsdModClient.class, "skyblock", true);
                 sidebarRenderer.invoke(minecraft.gui, graphics, objective);
             } catch (Exception ex) { throw new AssertionError("Actual sidebar render failed", ex); }
+            TooltipAndCompatSmokeTest.render(graphics, frames);
             if (++frames == 60) {
                 SkyblockUsdMod.LOGGER.info("CTM_SETTINGS_FRAMES_PASS: 60 settings/tooltip/blur/live section-p and StyledFormat sidebar frames");
                 minecraft.setScreen(new CurrencyRenderScreen());
@@ -223,6 +225,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
             AbstractWidget hovered = (AbstractWidget) children().get(frames % children().size());
             hovered.setTooltipDelay(Duration.ZERO);
             super.extractRenderState(graphics, hovered.getX() + 2, hovered.getY() + 2, delta);
+            TooltipAndCompatSmokeTest.render(graphics, frames);
             if (++frames == 60) {
                 SkyblockUsdMod.LOGGER.info("CTM_RENDER_TESTS_PASS: 120 real frames, both screens, hover tooltips, currency validation and sidebar");
                 minecraft.stop();

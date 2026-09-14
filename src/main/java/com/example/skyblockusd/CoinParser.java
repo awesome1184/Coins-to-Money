@@ -16,7 +16,12 @@ public final class CoinParser {
     private static final Pattern VALID_NUMBER = Pattern.compile("^(" + NUMBER + ")$");
     private static final Pattern COINS = Pattern.compile("(?<![\\w.,+$<\u00a3\u20ac-])(" + NUMBER + ")\\h*(?i:coins?)\\b");
     private static final Pattern BALANCE = Pattern.compile("(?i)\\b(Purse|Piggy(?: Bank)?|Bank|Balance|Coins):\\h*(" + NUMBER + ")(?![\\w.,])");
-    private static final Pattern PRICE = Pattern.compile("(?i)\\b(?:Buy price|Sell price|Price per unit|Price|Cost|Starting bid|Top bid|Your bid|BIN price|Buy it now):\\h*(" + NUMBER + ")(?![\\w.,])");
+    // Bare labels are accepted only as complete fields, never as the tail of
+    // "Mana Cost", "Soulflow Cost", "Health Cost", or an arbitrary future resource.
+    private static final String PRICE_LABEL = "(?:Buy price|Sell price|Price per unit|Price|Cost|Starting bid|Top bid|Your bid|BIN price|Buy it now)";
+    private static final String FIELD_START = "(?:^\\h*(?:[-•▶►]\\h+)?|(?<=[|;/])\\h*|(?<=[0-9])\\h+)";
+    private static final Pattern PRICE_TAIL = Pattern.compile("(?i)^\\h*(?:$|[\\r\\n|;]|coins?\\b|(?:each|per (?:unit|item|stack))\\b|/\\h*(?:unit\\b|item\\b|stack\\b|" + PRICE_LABEL + ":)|(?:" + PRICE_LABEL + "|Purse|Piggy(?: Bank)?|Bank|Balance):)");
+    private static final Pattern PRICE = Pattern.compile("(?im)" + FIELD_START + PRICE_LABEL + ":\\h*(" + NUMBER + ")(?![\\w.,])");
     private static final Pattern OTHER_CURRENCY = Pattern.compile("(?i)^\\h*(?:cookies?|gems?|bits?|copper|motes?|tokens?|essence)\\b");
     private static final Pattern COOKIE_ANNOTATION = Pattern.compile("\\[[+-]?<?[0-9,.]+ cookies(?:[ |\\]]|$)");
     private static final Pattern LAYOUT_SEPARATOR = Pattern.compile(" \\[| \\(| \\| | = ");
@@ -53,9 +58,23 @@ public final class CoinParser {
         List<Amount> result = new ArrayList<>();
         collect(COINS.matcher(text), 1, result, text, false);
         if (includeBalances) collect(BALANCE.matcher(text), 2, result, text, true);
-        if (includePrices) collect(PRICE.matcher(text), 1, result, text, true);
+        if (includePrices) collectPrices(text, result);
         result.sort(Comparator.comparingInt(Amount::start));
         return List.copyOf(result);
+    }
+
+    private static void collectPrices(String text, List<Amount> result) {
+        Matcher matcher = PRICE.matcher(text);
+        while (matcher.find()) {
+            // No blanket "Cost implies coins" rule: an unrecognised unit, stat glyph,
+            // percentage, time or resource count fails closed. Explicit "N coins"
+            // is handled independently, including mixed-resource purchase prices.
+            if (!PRICE_TAIL.matcher(text.substring(matcher.end(1))).find()) continue;
+            double value = parseNumber(matcher.group(1));
+            int start = matcher.start(1), end = matcher.end(1);
+            if (Double.isFinite(value) && result.stream().noneMatch(a -> start < a.end() && end > a.start()))
+                result.add(new Amount(start, end, value, matcher.group(1)));
+        }
     }
 
     private static void collect(Matcher matcher, int group, List<Amount> result, String text, boolean checkUnit) {
