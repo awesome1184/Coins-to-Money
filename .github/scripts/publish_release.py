@@ -84,10 +84,11 @@ def main():
     pages = json.loads(gh('api', '--paginate', '--slurp', f'{endpoint}/releases?per_page=100'))
     release = next((release for page in pages for release in page if release['tag_name'] == tag), None)
     if release is None:
-        gh('release', 'create', tag, '--repo', repo, '--target', commit,
-           '--title', f'Coins to Money {version}', '--notes-file', str(output / 'notes.md'), '--draft')
-        pages = json.loads(gh('api', '--paginate', '--slurp', f'{endpoint}/releases?per_page=100'))
-        release = next(release for page in pages for release in page if release['tag_name'] == tag)
+        # Use the returned release ID; the releases listing can lag creation.
+        release = json.loads(gh('api', '--method', 'POST', f'{endpoint}/releases',
+                                '-f', f'tag_name={tag}', '-f', f'target_commitish={commit}',
+                                '-f', f'name=Coins to Money {version}', '-F', 'draft=true',
+                                '-f', 'body=' + (output / 'notes.md').read_text(encoding='utf-8')))
     if not matches:
         require(release['draft'] and release['target_commitish'] == commit, 'Draft target mismatch')
 
@@ -98,9 +99,13 @@ def main():
                     'Existing release asset differs; refusing to overwrite ' + asset_name)
         else:
             require(release['draft'], 'Published release lacks expected asset; refusing to modify it')
-            gh('release', 'upload', tag, str(output / asset_name), '--repo', repo)
+            content_type = 'application/java-archive' if asset_name.endswith('.jar') else 'text/plain'
+            gh('api', '--method', 'POST',
+               f"https://uploads.github.com/repos/{repo}/releases/{release['id']}/assets?name={asset_name}",
+               '-H', 'Content-Type: ' + content_type, '--input', str(output / asset_name))
     if release['draft']:
-        gh('release', 'edit', tag, '--repo', repo, '--draft=false', '--latest')
+        gh('api', '--method', 'PATCH', f"{endpoint}/releases/{release['id']}",
+           '-F', 'draft=false', '-f', 'make_latest=true')
     print(f'https://github.com/{repo}/releases/tag/{tag}')
     print('Published verified JAR SHA-256: ' + manifest['jar_sha256'])
 
