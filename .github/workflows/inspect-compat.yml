@@ -1,0 +1,42 @@
+name: Inspect CustomScoreboard compatibility
+on:
+  push:
+    paths: ['.github/workflows/inspect-compat.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Inspect published 26.1 binary
+        run: |
+          mkdir -p inspect
+          python3 - <<'PY'
+          import hashlib, json, urllib.request, zipfile, subprocess
+          from pathlib import Path
+          def get(url):
+              return urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent':'Coins-to-Money/1.2.2 compatibility testing'}), timeout=60).read()
+          info = json.loads(get('https://api.modrinth.com/v2/version/9ZQ8S1sQ'))
+          assert info['project_id'] == 'fpb5uaJt'
+          Path('inspect/version.json').write_text(json.dumps(info, indent=2))
+          file = next(f for f in info['files'] if f['primary'])
+          data = get(file['url'])
+          assert hashlib.sha512(data).hexdigest() == file['hashes']['sha512']
+          jar=Path('inspect/customscoreboard.jar'); jar.write_bytes(data)
+          with zipfile.ZipFile(jar) as z:
+              Path('inspect/fabric.mod.json').write_bytes(z.read('fabric.mod.json'))
+              for name in z.namelist():
+                  if name.endswith('.class') and any(v in name for v in ['PurseElement','ChunkedStat','ScoreboardLineKt','BankElement','CustomScoreboardRenderer','NumberTrackingElement','NumberUtils','TextUtils']):
+                      cls=name[:-6].replace('/','.')
+                      Path('inspect/'+cls+'.txt').write_text(subprocess.check_output(['javap','-p','-c','-s','-classpath',str(jar),cls],text=True))
+          print(json.dumps(info,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: customscoreboard-inspection
+          path: inspect/
