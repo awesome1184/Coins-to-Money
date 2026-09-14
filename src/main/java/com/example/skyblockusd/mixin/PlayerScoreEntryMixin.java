@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /** Converts the separate numeric scoreboard value for Hypixel's split coin rows. */
 @Mixin(PlayerScoreEntry.class)
 public class PlayerScoreEntryMixin {
-    @Inject(method = "formatValue", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "formatValue", at = @At("RETURN"), cancellable = true)
     private void coinsToUsdValue(NumberFormat format, CallbackInfoReturnable<MutableComponent> cir) {
         PlayerScoreEntry entry = (PlayerScoreEntry) (Object) this;
         Minecraft minecraft = Minecraft.getInstance();
