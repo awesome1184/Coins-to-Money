@@ -11,5 +11,6 @@
     "modmenu": ["com.example.skyblockusd.ModMenuIntegration"]
   },
   "mixins": ["coins-to-money.mixins.json"],
-  "depends": { "fabricloader": ">=0.19.5", "fabric-api": ">=0.155.3+26.1.2", "minecraft": "26.1.2", "java": ">=25" }
+  "icon": "assets/coins-to-money/icon.png",
+  "depends": { "fabricloader": ">=0.19.5", "fabric-api": ">=0.155.3+26.1.2", "minecraft": ">=26.1.2 <26.3", "java": ">=25" }
 }
