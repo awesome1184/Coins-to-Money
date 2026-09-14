@@ -83,6 +83,21 @@ an exact live layout to be examined instead of guessing from a screenshot.
 Other mods that replace vanilla's sidebar or draw their own text may need integration.
 Server-rounded numbers (for example 1.2m) cannot recover their original precision.
 
+## 1.2.2: price context and CustomScoreboard
+
+Mana Cost, Soulflow Cost and other compound resource labels are not treated as coin
+price fields. Unknown units, stat glyphs and percentages in bare price fields fail closed.
+Explicit coin amounts still convert, including the coin portion of mixed-resource purchases.
+
+Optional integration supports meowdding CustomScoreboard's Purse/Piggy elements, all four
+label/number placements, label-free chunked purse stats, and uncustomized Hypixel Lines.
+Conversion runs before width/layout calculation; the mod retains its own layout and actions.
+Coins to Money's sidebar toggle and display settings also control this integration.
+CustomScoreboard and Kotlin are not bundled or required when playing without that mod.
+
+The integration targets published CustomScoreboard **1.12.11 for 26.1.x**. See
+[compatibility details and limitations](docs/1.2.2-COMPATIBILITY.md).
+
 ## Build and test
 
 Use JDK 25 and Gradle 9.5.1:
@@ -91,12 +106,14 @@ Use JDK 25 and Gradle 9.5.1:
 gradle clean build --no-daemon
 ```
 
-Install `build/libs/coins-to-money-1.2.1.jar` with Fabric Loader 0.19.5+ and Fabric API
+Install `build/libs/coins-to-money-1.2.2.jar` with Fabric Loader 0.19.5+ and Fabric API
 0.155.3+26.1.2, replacing the previous JAR. Do not install sources or the smoke-test mod.
 
 CI runs unit regressions, verifies the distribution, and boots an actual Fabric client
-under Xvfb to test transformed sidebar rows, widths, hover tooltips, settings persistence,
-manual-rate validation and 120 settings/currency render frames. Test-only fixtures are not
-included in the shipped JAR. Unit coverage includes all 168 order/layout/visibility combinations.
-The client tests use synthetic data, **not a logged-in Hypixel playtest**. Reports, logs,
-source snapshot and SHA-256 are attached to the successful workflow run.
+under Xvfb both without the optional mods and with the published CustomScoreboard binary.
+It checks transformed sidebar rows, widths, green colours, unchanged resources, hover
+help, settings persistence and 120 settings/currency render frames in each configuration.
+Test-only fixtures are not included in the shipped JAR. Unit coverage includes the earlier
+section-p purse regression and all 168 order/layout/visibility combinations.
+The client tests use synthetic data, **not a logged-in Hypixel playtest**. Reports, both
+client logs, source snapshot and SHA-256 are attached to the successful workflow run.

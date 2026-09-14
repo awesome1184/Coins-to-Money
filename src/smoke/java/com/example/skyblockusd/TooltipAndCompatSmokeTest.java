@@ -60,6 +60,11 @@ final class TooltipAndCompatSmokeTest {
         Component fallback = Component.literal("Purse: §67,416,7§p§601 §e(+5)");
         AbstractWidget fallbackWidget = widget(client, fallback);
         check("Purse: $1.78 (+5)", text(fallbackWidget).getString()); widgets.add(fallbackWidget);
+        // CurrencyStorage is profile-scoped. Seed an explicitly synthetic profile,
+        // otherwise its setter is a no-op in the title-screen test environment.
+        Class<?> profiles = Class.forName("tech.thatgravyboat.skyblockapi.api.profile.profile.ProfileAPI");
+        Field profileName = profiles.getDeclaredField("profileName"); profileName.setAccessible(true);
+        Object oldProfile = profileName.get(null); profileName.set(null, "ctm-ci-synthetic-profile");
         // Exercise actual PurseElement -> CurrencyAPI -> renderer and the label-free chunk supplier.
         Class<?> api = Class.forName("tech.thatgravyboat.skyblockapi.api.profile.currency.CurrencyAPI");
         Object currency = api.getField("INSTANCE").get(null);
@@ -83,6 +88,7 @@ final class TooltipAndCompatSmokeTest {
                 assertGreen(Component.literal(converted)); widgets.add(widget(client, Component.literal(converted)));
             } else check(raw, converted);
         }
+        profileName.set(null, oldProfile);
         // No stale replacement survives disabling or unavailable quotes.
         ModConfig.INSTANCE.enablePurse = false;
         check(fallback.getString(), text(widget(client, fallback)).getString());
