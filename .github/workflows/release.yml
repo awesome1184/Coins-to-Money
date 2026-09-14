@@ -1,0 +1,33 @@
+name: Publish verified release
+
+# Update the manifest to publish the exact JAR from a successful build.
+# Releases never rebuild the mod or overwrite existing assets.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/release.json']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-coins-to-money-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify tested artifact and publish JAR
+        run: python3 .github/scripts/publish_release.py
+        env:
+          GH_TOKEN: ${{ github.token }}

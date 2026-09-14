@@ -1,0 +1,9 @@
+{
+  "version": "1.2.0",
+  "commit": "06fc63a1496cbec68ec30be1a16ccebe81ab54da",
+  "run_id": 34802367993,
+  "artifact_id": 10331469629,
+  "jar_sha256": "4892a0b2d399a32c3b6ccf52fb6b32d65d0d00f1d6c91544a582c88708d3f2f0",
+  "artifact_sha256": "bef78a821f80e9ed1bbfda87101a2f5467893c06bb361dfe1ce09827b9dbe039",
+  "notes": "## Installation\nDownload **coins-to-money-1.2.0.jar** below and replace the previous Coins to Money JAR in your `mods` folder. Do not keep multiple versions installed.\n\nRequires **Minecraft 26.1.2**, **Java 25**, **Fabric Loader 0.19.5+**, and **Fabric API 0.155.3+26.1.2**. Mod Menu is optional. **K** opens settings; **O** toggles conversion.\n\n## Changes\n- Green money and cookie values, with USD-only replacement by default and no standalone HUD.\n- Six display orders and four layouts: brackets, parentheses, inline bars, and equals signs.\n- Hover explanations for settings and currency inputs.\n- Manual real-world currencies: currency code and target-currency units per USD, saved locally.\n- Expanded purse handling for non-fixed split scoreboard values and team-colour sidebars, plus a Copy purse diagnostics button.\n\nThe comparison basis remains 325 gems per cookie and 11,000 gems per $100. Cookie instant-buy quotes refresh automatically; manual foreign-exchange rates do not.\n\n## Verification\nThis is the **same JAR from the successful v1.2.0 build**, not a rebuild. All 96 unit tests passed, and the real Fabric client passed the synthetic sidebar/settings/currency rendering checks. The purse changes have **not been verified in a logged-in Hypixel session**. If the live purse remains unchanged, use **K -> Copy purse diagnostics**.\n\n`SHA256SUMS` is provided to verify the downloaded JAR."
+}
