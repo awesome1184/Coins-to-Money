@@ -4,6 +4,6 @@
   "version": "1.0.0",
   "name": "Coins to Money render regressions (TEST ONLY)",
   "environment": "client",
-  "entrypoints": { "client": ["com.example.skyblockusd.ClientRenderSmokeTest"] },
-  "depends": { "coins-to-money": "*", "fabric-api": "*", "minecraft": "26.1.2" }
+  "entrypoints": {"client": ["com.example.skyblockusd.ClientRenderSmokeTest", "com.example.skyblockusd.FinalIntegrationSmokeTest"]},
+  "depends": {"coins-to-money": "*", "fabric-api": "*", "minecraft": "26.1.2"}
 }

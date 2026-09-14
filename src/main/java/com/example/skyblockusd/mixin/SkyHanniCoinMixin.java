@@ -15,4 +15,8 @@ public abstract class SkyHanniCoinMixin {
     private void coinsToMoney$coin(Number value, boolean gray, CallbackInfoReturnable<String> cir) {
         cir.setReturnValue(SkyHanniCompat.scalar(cir.getReturnValue(), value.doubleValue()));
     }
+    @Inject(method = "getPriceName-0mM9I0c(Ljava/lang/String;Ljava/lang/Number;D)Ljava/lang/String;", at = @At("RETURN"), cancellable = true, require = 0)
+    private void coinsToMoney$coinName(String internalName, Number amount, double pricePer, CallbackInfoReturnable<String> cir) {
+        cir.setReturnValue(SkyHanniCompat.coinName(internalName, cir.getReturnValue()));
+    }
 }

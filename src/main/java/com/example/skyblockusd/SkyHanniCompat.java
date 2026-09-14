@@ -7,10 +7,10 @@ import java.util.Objects;
 /** Scoped display adapters: never intercept generic numbers, prices or tracker arithmetic. */
 public final class SkyHanniCompat {
     private static long scalarCalls, cropCalls, textChanges, revision = 1;
+    private static final java.util.regex.Pattern MONEY_MARKER = java.util.regex.Pattern.compile("\\p{Sc}|\\bcookies\\b|\\b[A-Z]{3} [+-]?<?[0-9]");
     private static Object lastView;
     private static boolean triedTracker;
-    private static Object tracker;
-    private static java.lang.reflect.Method dirty;
+    private static java.lang.reflect.Field trackerChanged;
     private SkyHanniCompat() { }
     public static boolean active() {
         return ModConfig.INSTANCE.enabled && ModConfig.INSTANCE.enableSkyHanni
@@ -29,13 +29,15 @@ public final class SkyHanniCompat {
             triedTracker = true;
             try {
                 Class<?> cls = Class.forName("at.hannibal2.skyhanni.data.TrackerManager");
-                tracker = cls.getField("INSTANCE").get(null); dirty = cls.getMethod("setDirty", boolean.class);
+                // Use the native one-frame invalidation flag. Setting dirty directly
+                // would leave it true indefinitely and rebuild every tracker each frame.
+                trackerChanged = cls.getDeclaredField("hasChanged"); trackerChanged.setAccessible(true);
             } catch (ReflectiveOperationException | LinkageError ex) {
                 SkyblockUsdMod.LOGGER.warn("SkyHanni tracker invalidation unavailable; displays update on their normal refresh");
             }
         }
-        if (dirty != null) try { dirty.invoke(tracker, true); }
-        catch (ReflectiveOperationException ex) { dirty = null; }
+        if (trackerChanged != null) try { trackerChanged.setBoolean(null, true); }
+        catch (ReflectiveOperationException ex) { trackerChanged = null; }
     }
     public static String scalar(String original, double coins) {
         scalarCalls++;
@@ -43,6 +45,15 @@ public final class SkyHanniCompat {
         Component source = Component.literal(original);
         Component converted = CoinText.convertKnownCoinValue(source, coins);
         return converted == source ? original : CustomScoreboardCompat.legacy(converted) + CustomScoreboardCompat.terminalStyle(source);
+    }
+    /** This native helper appends " coins" after formatCoin. Remove that unit only
+     * for its typed SKYBLOCK_COIN branch when the result contains our green equivalent. */
+    public static String coinName(String internalName, String formatted) {
+        if (!active() || ModConfig.INSTANCE.keepCoins || !internalName.equals("SKYBLOCK_COIN")
+                || !formatted.endsWith(" coins") || !formatted.contains("§a")) return formatted;
+        String visible = CoinParser.plain(formatted);
+        if (!MONEY_MARKER.matcher(visible).find()) return formatted;
+        return formatted.substring(0, formatted.length() - " coins".length());
     }
     public static CharSequence crop(CharSequence original, double extraPerHour, double cropPerHour) {
         cropCalls++;

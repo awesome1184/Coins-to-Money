@@ -74,29 +74,46 @@ either side remain part of the same number. This fixes the diagnostic row
 `Purse: §67,416,7§p§601 §e(+5)` with an empty `BlankFormat` value. Its purse is **7,416,701**;
 `(+5)` is a separate gain suffix, and the raw score of 5 is not part of the balance.
 
-If a live purse still remains unchanged, use **Copy purse diagnostics** while in SkyBlock.
-It copies the currency rows, their format types/codepoints, hook activity and conversion
-settings. It includes displayed balances, but not credentials, chat, or player names from
-other scoreboard rows. It stays on the clipboard until you choose to share it. This allows
-an exact live layout to be examined instead of guessing from a screenshot.
+Use **Copy purse diagnostics** while in SkyBlock to inspect a purse that remains unchanged.
+It copies the currency rows, their format types/codepoints, hook activity, installed optional
+mod versions and conversion settings. It includes displayed balances, but not credentials,
+chat, or player names from other scoreboard rows. It stays on the clipboard until shared.
 
 Other mods that replace vanilla's sidebar or draw their own text may need integration.
 Server-rounded numbers (for example 1.2m) cannot recover their original precision.
 
-## 1.2.2: price context and CustomScoreboard
+## Optional mod integrations (1.2.3)
 
 Mana Cost, Soulflow Cost and other compound resource labels are not treated as coin
 price fields. Unknown units, stat glyphs and percentages in bare price fields fail closed.
 Explicit coin amounts still convert, including the coin portion of mixed-resource purchases.
 
-Optional integration supports meowdding CustomScoreboard's Purse/Piggy elements, all four
-label/number placements, label-free chunked purse stats, and uncustomized Hypixel Lines.
-Conversion runs before width/layout calculation; the mod retains its own layout and actions.
-Coins to Money's sidebar toggle and display settings also control this integration.
-CustomScoreboard and Kotlin are not bundled or required when playing without that mod.
+**CustomScoreboard:** supports the published **1.12.14-2 for 26.1.x** build. Purse/Piggy,
+all four label/number placements, long/compact and localized numbers, chunked purse and
+Hypixel Lines are supported. Money and cookies use its unrounded, read-only purse API;
+retained coins keep CustomScoreboard's chosen representation. Its own builder measures
+and arranges the converted components. The Sidebar toggle controls this integration.
 
-The integration targets published CustomScoreboard **1.12.11 for 26.1.x**. See
-[compatibility details and limitations](docs/1.2.2-COMPATIBILITY.md).
+**SkyHanni:** supports the published **7.56.0 for 26.1.x** build. Coin-specific formatting
+covers chest profit and tracker item-value breakdowns; additional display adapters cover
+shared tracker totals/profit per hour, labelled mining money/hour, and crop-money cells.
+Counts, XP, mana, Soulflow, percentages, source prices and profit arithmetic are not modified.
+Use **K -> SkyHanni profits** to control this integration independently of the sidebar.
+Existing money/cookie/coin order, layout, currency and precision settings apply to both mods.
+
+SkyHanni's original renderable text is retained where the label adapter is used, and the
+same projection is measured and drawn. Shared trackers receive their native one-frame
+refresh request on display/quote changes. Other cached overlays rebuild on their usual
+native refresh; reopen a chest overlay after changing display settings if it is still cached.
+No conversion is fabricated while the cookie quote is unavailable.
+
+Native SkyBlock context is used as well as the vanilla sidebar. CustomScoreboard, SkyHanni,
+Kotlin and their dependencies remain optional and are not bundled. Install each mod's own
+normal dependencies. Older/newer mod versions may change signatures; the clipboard diagnostics
+include installed versions and adapter counters. These integrations do not imply support for
+arbitrary mod-drawn numbers or every future SkyHanni display.
+
+See [integration details and reproducible tests](docs/1.2.3-INTEGRATIONS.md).
 
 ## Build and test
 
@@ -106,14 +123,19 @@ Use JDK 25 and Gradle 9.5.1:
 gradle clean build --no-daemon
 ```
 
-Install `build/libs/coins-to-money-1.2.2.jar` with Fabric Loader 0.19.5+ and Fabric API
+Install `build/libs/coins-to-money-1.2.3.jar` with Fabric Loader 0.19.5+ and Fabric API
 0.155.3+26.1.2, replacing the previous JAR. Do not install sources or the smoke-test mod.
 
-CI runs unit regressions, verifies the distribution, and boots an actual Fabric client
-under Xvfb both without the optional mods and with the published CustomScoreboard binary.
-It checks transformed sidebar rows, widths, green colours, unchanged resources, hover
-help, settings persistence and 120 settings/currency render frames in each configuration.
-Test-only fixtures are not included in the shipped JAR. Unit coverage includes the earlier
-section-p purse regression and all 168 order/layout/visibility combinations.
-The client tests use synthetic data, **not a logged-in Hypixel playtest**. Reports, both
-client logs, source snapshot and SHA-256 are attached to the successful workflow run.
+CI runs unit regressions, verifies the distribution, and boots four actual Fabric clients:
+without optional mods, CustomScoreboard alone, SkyHanni alone, and both together. The mod
+binaries are pinned with SHA-512 in `ci/integration-lock.json` and are not substituted with mocks.
+Each run exercises 120 settings/currency rendering frames, with actual native widgets where
+installed. Tests cover complete CustomScoreboard builds under three locales and both numeric
+formats, chest-profit construction, shared tracker totals, crop formatting, green values,
+widths, gates, settings changes and unchanged underlying balances/calculations.
+
+Test fixtures are excluded from the distributed JAR. Existing section-p purse, non-coin cost,
+and all 168 display order/layout/visibility regressions remain. These are synthetic inputs in
+real mods, **not a logged-in Hypixel playtest**. Reports, four client logs, source snapshot and
+SHA-256 are attached to the successful build. The GitHub release publishes that exact tested
+JAR without rebuilding it.

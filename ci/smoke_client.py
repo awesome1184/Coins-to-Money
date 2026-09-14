@@ -20,7 +20,7 @@ text = log.read_text(errors='replace')
 print(text[-18000:])
 markers = ['CTM_ROW_TESTS_PASS', 'CTM_PURSE_DIAGNOSTIC_PASS', 'CTM_RENDER_TESTS_PASS', 'CTM_RESOURCE_COSTS_PASS']
 if mode in ('custom', 'both'): markers.append('CTM_CUSTOMSCOREBOARD_PASS')
-if mode in ('hanni', 'both'): markers.append('CTM_SKYHANNI_PASS')
+if mode in ('hanni', 'both'): markers.extend(['CTM_SKYHANNI_PASS', 'CTM_FINAL_INTEGRATION_CHECKS_PASS'])
 if mode == 'base': markers.append('CTM_OPTIONAL_COMPAT_ABSENT_PASS')
 if process.returncode or any(m not in text for m in markers): raise SystemExit('Failed integration: ' + mode)
 print('PASS: actual client integration', mode)

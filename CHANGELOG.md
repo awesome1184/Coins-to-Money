@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.3
+
+- CustomScoreboard money and cookie values now use its read-only, unrounded purse API instead
+  of parsing its localized/compact display. Original coin text, gains and layout are retained.
+- Support both Component and legacy-string number arrangements, chunked purse and Hypixel Lines.
+- Keep conversion/quote refresh active using the optional mods' native SkyBlock context as well
+  as the vanilla sidebar, including when a replacement sidebar is in use.
+- Add optional SkyHanni coin formatter, dungeon/Kuudra chest profit, shared tracker totals and
+  money/hour, crop-money cells, and labelled profit renderable integration. Never hook generic numbers.
+- Measure and render the same projected text, preserve source text and signed calculations,
+  and request the native self-clearing tracker update when settings or quotes change.
+- Add a SkyHanni profits toggle, preserve green equivalents and non-coin resource safeguards.
+- Expand diagnostics with installed versions and adapter call/change counters.
+- Test the published CustomScoreboard 1.12.14-2 and SkyHanni 7.56.0 builds separately and together,
+  plus a client without either optional mod. No optional dependency or fixture is bundled.
+
 ## 1.2.2
 
 - Stops treating Mana Cost, Soulflow Cost and other compound resource labels as coin prices.
