@@ -13,7 +13,6 @@ class CoinParserTest {
         "3.25b|3250000000", "1t|1000000000000", "-1,234|-1234", "+2.5K|2500", "1000000000000|1000000000000", "1q|1000000000000000"
     })
     void parsesWholeNumbers(String text, double expected) { assertEquals(expected, CoinParser.parseNumber(text)); }
-
     @ParameterizedTest
     @ValueSource(strings = {"7,014,5", "1,00", "1,,000", "12.3.4", "NaN", "Infinity", "1e9", "1kk", "", "-", "1,234,", "123abc"})
     void rejectsMalformedAmounts(String text) {
@@ -38,8 +37,8 @@ class CoinParserTest {
         assertTrue(CoinParser.find("Price: 325 Gems | Cost: 1,000 Bits", true, true).isEmpty());
     }
     @Test void balancesAndPriceOnlyLabelsAreOptional() {
-        assertTrue(CoinParser.find("Purse: 500 Price: 600", false, false).isEmpty());
-        assertEquals(2, CoinParser.find("Purse: 500 Price: 600", true, true).size());
+        assertTrue(CoinParser.find("Purse: 500 | Price: 600", false, false).isEmpty());
+        assertEquals(2, CoinParser.find("Purse: 500 | Price: 600", true, true).size());
     }
     @Test void bankDoesNotOverwritePurseAndPiggyBankWorks() {
         assertTrue(CoinParser.purse("Bank: 999,999").isEmpty());

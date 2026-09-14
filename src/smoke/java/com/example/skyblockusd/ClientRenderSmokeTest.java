@@ -32,7 +32,6 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
     private static Method rowFactory;
     private static Method sidebarRenderer;
     private static boolean started;
-
     @Override public void onInitializeClient() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (started || client.getOverlay() != null || client.screen == null) return;
@@ -44,6 +43,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
                 sidebarRenderer.setAccessible(true);
                 seed();
                 rows(client);
+                CustomScoreboardSmokeTest.run(client);
                 var screen = new RenderScreen();
                 client.setScreen(screen);
                 click(screen, "Show cookies:"); check(true, ModConfig.INSTANCE.showCookies);
@@ -63,8 +63,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
                 click(currency, "Apply");
                 check("EUR", ModConfig.INSTANCE.currencyCode); check(.92d, ModConfig.INSTANCE.currencyPerUsd);
                 ModConfig.load(); check("EUR", ModConfig.INSTANCE.currencyCode); check(.92d, ModConfig.INSTANCE.currencyPerUsd);
-                seed();
-                ModConfig.save();
+                seed(); ModConfig.save();
                 client.setScreen(new RenderScreen());
                 SkyblockUsdMod.LOGGER.info("CTM_ROW_TESTS_PASS: real vanilla row constructor, fixed formats, widths, toggles and saved settings");
             } catch (Throwable ex) { throw new AssertionError("CTM_RENDER_TEST_FAILURE", ex); }
@@ -110,7 +109,6 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
         assertRow(client, board, entry("Purse: 7,416,611", 8, null), fallback, "Purse: $1.78", "8");
         assertRow(client, board, entry("Purse: 7,416,611", 8, BlankFormat.INSTANCE), fallback, "Purse: $1.78", "");
         assertRow(client, board, entry("Bits: ", 8, fixed("7,120")), fallback, "Bits: ", "7,120");
-        // Exact user diagnostic, with both override and inherited BlankFormat paths.
         assertRow(client, board, entry(LIVE_PURSE, 5, BlankFormat.INSTANCE), fallback, "Purse: $1.78 (+5)", "");
         assertRow(client, board, entry(LIVE_PURSE, 5, null), BlankFormat.INSTANCE, "Purse: $1.78 (+5)", "");
         ModConfig.INSTANCE.showCookies = true; ModConfig.INSTANCE.keepCoins = true;
@@ -123,7 +121,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
         board.addPlayerToTeam("§p", liveTeam);
         assertRow(client, board, new PlayerScoreEntry("§p", 5, null, BlankFormat.INSTANCE), fallback, "Purse: $1.78 (+5)", "");
         board.removePlayerTeam(liveTeam);
-        check("1.2.1", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
+        check("1.2.2", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
         SkyblockUsdMod.LOGGER.info("CTM_PURSE_DIAGNOSTIC_PASS: exact section-p row, all 7,416,701 coins, BlankFormat, rawScore=5 unchanged, gain suffix preserved");
         var team = board.addPlayerTeam("team"); team.setPlayerPrefix(Component.literal("Purse: "));
         board.addPlayerToTeam("fixture", team);
@@ -193,8 +191,6 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
         }
         @Override public void extractBackground(GuiGraphicsExtractor graphics, int x, int y, float delta) {
             backgrounds++;
-            // Emulate the in-world blur even in the CI client's title-screen environment.
-            // The real GuiRenderState rejects a second blur, reproducing the reported crash.
             graphics.blurBeforeThisStratum();
             graphics.fill(0, 0, width, height, 0x99000000);
         }
@@ -206,6 +202,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
             try {
                 setStatic(SkyblockUsdModClient.class, "skyblock", true);
                 sidebarRenderer.invoke(minecraft.gui, graphics, objective);
+                CustomScoreboardSmokeTest.render(graphics);
             } catch (Exception ex) { throw new AssertionError("Actual sidebar render failed", ex); }
             if (++frames == 60) {
                 SkyblockUsdMod.LOGGER.info("CTM_SETTINGS_FRAMES_PASS: 60 settings/tooltip/blur/live section-p and StyledFormat sidebar frames");
@@ -229,5 +226,4 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
             }
         }
     }
-
 }

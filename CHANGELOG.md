@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.2
+
+- Stops matching the suffix of Mana Cost, Soulflow Cost and other non-coin stat labels.
+- Generic costs now require an explicit coins unit; implicit price labels must be complete fields
+  and unknown units/icons/percentages are not assumed to be coins.
+- Adds optional CustomScoreboard purse/Piggy integration for its four number formats,
+  chunked purse and vanilla-lines mode before widget width/layout calculation.
+- Uses CustomScoreboard's raw purse source for conversion, retaining its original localized or
+  compact coin display, labels and gain suffix. No server/API balances are changed.
+- Keeps green equivalents, all user-selected layouts and the existing vanilla purse fix.
+- CI tests with and without the published CustomScoreboard 1.12.14-2 JAR and its dependencies.
+
 ## 1.2.1
 
 - Fixes the exact live purse row containing the unsupported `§p` marker inside `7,416,701`.
@@ -23,7 +35,6 @@
   Currency edits apply atomically; cancel discards changes. No FX API or invented rates.
 - Extend unit regressions and real-client testing for StyledFormat, coloured sidebars,
   all order/layout/visibility combinations, green output, tooltips and currency editing.
-
 
 ## 1.1.1
 

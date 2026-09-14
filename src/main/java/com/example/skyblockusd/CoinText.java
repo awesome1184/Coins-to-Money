@@ -13,21 +13,26 @@ public final class CoinText {
     private static final Pattern COIN_UNIT = Pattern.compile("(?i)^\\h*coins?\\b");
     private record Part(int start, int end, String text, Style style) { }
     private CoinText() { }
-
     public static Component convert(Component original, boolean balances, boolean prices) {
         return convert(original, balances, prices, CookiePriceFetcher.state(), System.currentTimeMillis(), ModConfig.INSTANCE);
     }
     static Component convert(Component original, boolean balances, boolean prices,
                              CookiePriceFetcher.State state, long now, ModConfig config) {
-        if (original == null || !config.enabled || !state.available(now) || (!config.showUsd && !config.showCookies)) return original;
-        String raw = original.getString();
-        if (raw.length() > 16_384) return original;
-        // Match the same decoded component runs that will be used for replacements.
-        // A regex over getString() rejected Hypixel's invisible section-p marker and
-        // could pair a trailing section sign with the next component's first digit.
-        var amounts = CoinParser.find(VisibleText.plain(original), balances, prices);
+        if (!canConvert(original, state, now, config)) return original;
+        return replace(original, CoinParser.find(VisibleText.plain(original), balances, prices), state, now, config);
+    }
+    static Component convertPurseValue(Component original, double exactCoins,
+                                      CookiePriceFetcher.State state, long now, ModConfig config) {
+        if (!canConvert(original, state, now, config)) return original;
+        return replace(original, CoinParser.knownPurseValue(VisibleText.plain(original), exactCoins), state, now, config);
+    }
+    private static boolean canConvert(Component original, CookiePriceFetcher.State state, long now, ModConfig config) {
+        return original != null && config.enabled && state.available(now) && (config.showUsd || config.showCookies)
+                && original.getString().length() <= 16_384;
+    }
+    private static Component replace(Component original, List<CoinParser.Amount> amounts,
+                                     CookiePriceFetcher.State state, long now, ModConfig config) {
         if (amounts.isEmpty()) return original;
-        // Component siblings and legacy formatting can split a number at ANY digit.
         List<Part> parts = new ArrayList<>();
         StringBuilder text = new StringBuilder();
         VisibleText.visit(original, (index, characterStyle, codepoint) -> {
@@ -44,9 +49,8 @@ public final class CoinText {
             CoinConversion value;
             try {
                 value = CoinConversion.of(amount.coins(), state.quote().instantBuyPrice());
-                if (config.showUsd) value.moneyText(config); // Fail closed on invalid manual rates/overflow.
-            }
-            catch (IllegalArgumentException ex) { continue; }
+                if (config.showUsd) value.moneyText(config);
+            } catch (IllegalArgumentException ex) { continue; }
             if (amount.start() < cursor) continue;
             int end = amount.end();
             var unit = COIN_UNIT.matcher(text.substring(end));
@@ -60,8 +64,7 @@ public final class CoinText {
             Style originalStyle = styleAt(parts, amount.start());
             Style green = originalStyle.withColor(ChatFormatting.GREEN);
             for (int i = 0; i < visible.size(); i++) {
-                if (i > 0) output.append(Component.literal(i == 1 ? config.displayLayout.firstSeparator : config.displayLayout.separator)
-                        .withStyle(originalStyle));
+                if (i > 0) output.append(Component.literal(i == 1 ? config.displayLayout.firstSeparator : config.displayLayout.separator).withStyle(originalStyle));
                 switch (visible.get(i)) {
                     case COINS -> appendRange(output, parts, amount.start(), end);
                     case MONEY -> output.append(Component.literal(value.moneyText(config)).withStyle(green));
@@ -78,8 +81,7 @@ public final class CoinText {
         return output;
     }
     private static Style styleAt(List<Part> parts, int position) {
-        return parts.stream().filter(part -> position >= part.start && position < part.end)
-                .findFirst().map(Part::style).orElse(Style.EMPTY);
+        return parts.stream().filter(part -> position >= part.start && position < part.end).findFirst().map(Part::style).orElse(Style.EMPTY);
     }
     private static void appendRange(MutableComponent output, List<Part> parts, int start, int end) {
         StringBuilder run = new StringBuilder();
@@ -88,8 +90,7 @@ public final class CoinText {
             if (part.end <= start) continue;
             if (part.start >= end) break;
             if (style != null && !style.equals(part.style)) {
-                output.append(Component.literal(run.toString()).withStyle(style));
-                run.setLength(0);
+                output.append(Component.literal(run.toString()).withStyle(style)); run.setLength(0);
             }
             style = part.style;
             run.append(part.text, Math.max(0, start - part.start), Math.min(part.text.length(), end - part.start));

@@ -27,6 +27,11 @@ public final class SidebarDiagnostics {
         report.addProperty("showMoney", ModConfig.INSTANCE.showUsd);
         report.addProperty("showCookies", ModConfig.INSTANCE.showCookies);
         report.addProperty("keepCoins", ModConfig.INSTANCE.keepCoins);
+        report.addProperty("customScoreboardVersion", FabricLoader.getInstance().getModContainer("customscoreboard")
+                .map(mod -> mod.getMetadata().getVersion().getFriendlyString()).orElse("not installed"));
+        report.addProperty("customNumberHookCalls", CustomScoreboardCompat.numberCalls());
+        report.addProperty("customChunkHookCalls", CustomScoreboardCompat.chunkCalls());
+        report.addProperty("customWidgetHookCalls", CustomScoreboardCompat.widgetCalls());
         if (client.level == null || client.player == null) return report.toString();
         var board = client.level.getScoreboard();
         var objective = SkyblockContext.sidebar(board, client.player.getScoreboardName());

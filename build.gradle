@@ -15,6 +15,10 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
     compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
     runtimeOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    compileOnly 'org.jetbrains.kotlin:kotlin-stdlib:2.3.20'
+    if (project.hasProperty('customScoreboardTest')) {
+        runtimeOnly files(fileTree('build/compat-mods') { include '*.jar' })
+    }
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -47,7 +51,6 @@ publishing {
         }
     }
 }
-
 // Test-only Fabric mod. Never included in the distributable JAR.
 sourceSets {
     smoke {
@@ -70,7 +73,7 @@ loom {
         smokeClient {
             client()
             source sourceSets.smoke
-            runDir 'build/smoke-run'
+            runDir project.hasProperty('customScoreboardTest') ? 'build/compat-smoke-run' : 'build/smoke-run'
         }
     }
 }

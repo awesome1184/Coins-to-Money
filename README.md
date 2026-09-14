@@ -74,14 +74,31 @@ either side remain part of the same number. This fixes the diagnostic row
 `Purse: §67,416,7§p§601 §e(+5)` with an empty `BlankFormat` value. Its purse is **7,416,701**;
 `(+5)` is a separate gain suffix, and the raw score of 5 is not part of the balance.
 
-If a live purse still remains unchanged, use **Copy purse diagnostics** while in SkyBlock.
-It copies the currency rows, their format types/codepoints, hook activity and conversion
-settings. It includes displayed balances, but not credentials, chat, or player names from
-other scoreboard rows. It stays on the clipboard until you choose to share it. This allows
-an exact live layout to be examined instead of guessing from a screenshot.
+Use **Copy purse diagnostics** while in SkyBlock to inspect a purse which remains unchanged.
+It copies currency rows, their format types/codepoints, hook activity and conversion settings.
+It includes displayed balances, but not credentials, chat, or other scoreboard player names.
+It stays on the clipboard until shared. Adapter counters and installed CustomScoreboard version
+are included to help diagnose compatibility without guessing from screenshots.
 
 Other mods that replace vanilla's sidebar or draw their own text may need integration.
 Server-rounded numbers (for example 1.2m) cannot recover their original precision.
+
+## Non-coin costs and CustomScoreboard (1.2.2)
+
+Mana, soulflow, health, energy, item requirements and other non-coin values are not prices.
+Generic `Cost:` and qualified cost labels convert only when an explicit `coins` unit is present.
+Unitless prices must use a complete supported price label; unknown units, icons and percentages
+are left untouched rather than guessed. Explicit coin prices in the same tooltip still convert.
+
+Optional compatibility targets **meowdding CustomScoreboard 1.12.14-2 for 26.1**:
+https://github.com/meowdding/CustomScoreboard
+Install CustomScoreboard with its normal dependencies; this mod does not bundle them.
+The integration activates automatically and respects the existing Sidebar conversion toggle.
+It converts Purse/Piggy before CustomScoreboard builds/measures its widgets, preserves its four
+label/number orientations, handles its chunked purse and vanilla-lines mode, and keeps gains
+separate. Its numeric purse API is read-only: short/localized text is retained for coins, but
+money/cookies use the unrounded amount. Bits, mana, motes, gems and other chunked stats are not
+converted. Unsupported future API signatures are optional; diagnostics include adapter counters.
 
 ## Build and test
 
@@ -91,12 +108,16 @@ Use JDK 25 and Gradle 9.5.1:
 gradle clean build --no-daemon
 ```
 
-Install `build/libs/coins-to-money-1.2.1.jar` with Fabric Loader 0.19.5+ and Fabric API
+Install `build/libs/coins-to-money-1.2.2.jar` with Fabric Loader 0.19.5+ and Fabric API
 0.155.3+26.1.2, replacing the previous JAR. Do not install sources or the smoke-test mod.
 
 CI runs unit regressions, verifies the distribution, and boots an actual Fabric client
 under Xvfb to test transformed sidebar rows, widths, hover tooltips, settings persistence,
 manual-rate validation and 120 settings/currency render frames. Test-only fixtures are not
 included in the shipped JAR. Unit coverage includes all 168 order/layout/visibility combinations.
-The client tests use synthetic data, **not a logged-in Hypixel playtest**. Reports, logs,
-source snapshot and SHA-256 are attached to the successful workflow run.
+
+CI runs both without CustomScoreboard and with pinned, SHA-512-verified published mods in a
+separate test instance. The compatibility run exercises real purse generation, all four label
+formats, chunk suppliers, toggles, colour and widget widths, then renders the actual widgets
+alongside the settings tests. These are isolated fixtures, **not a logged-in Hypixel session**.
+Reports, both client logs, source snapshot and SHA-256 are attached to the successful workflow.
