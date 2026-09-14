@@ -1,3 +1,35 @@
+Have you ever felt like you overspend in SkyBlock? No more! This mod is here to guilt-trip you into reconsidering your every purchase by equating each coin loss and gain to a real-world money gain/loss.
+
+Features -
+
+    Translates your purchases from SkyBlock coins into the USD equivalent
+    It also shows how many cookies an item is worth
+    Support for any currency
+    Customizable precision
+
+Press K to open the settings and 0 to disable the mod (Mod Menu isnt a dependency due to this) (these keybinds can be edited)
+
+110 gems = 1 USD 1 cookie = about 3 dollars
+
+
+<img width="434" height="300" alt="image" src="https://github.com/user-attachments/assets/17286502-5895-48fc-8d5f-53a84484e6c7" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CLANKER'S DOCUMENTATION BELOW, DON'T READ IF YOU'RE ALLERGIC TO AI SLOP
 # Coins to Money
 
 Client-side Fabric mod for **Minecraft 26.1.2 / Java 25**, originally by awesome1184.
