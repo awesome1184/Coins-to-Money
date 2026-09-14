@@ -47,3 +47,30 @@ publishing {
         }
     }
 }
+
+// Test-only Fabric mod. Never included in the distributable JAR.
+sourceSets {
+    smoke {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+configurations {
+    smokeImplementation.extendsFrom implementation
+    smokeRuntimeOnly.extendsFrom runtimeOnly
+}
+loom {
+    mods {
+        'coins-to-money' { sourceSet sourceSets.main }
+        if (gradle.startParameter.taskNames.any { it.endsWith('runSmokeClient') }) {
+            'coins-to-money-smoke' { sourceSet sourceSets.smoke }
+        }
+    }
+    runs {
+        smokeClient {
+            client()
+            source sourceSets.smoke
+            runDir 'build/smoke-run'
+        }
+    }
+}

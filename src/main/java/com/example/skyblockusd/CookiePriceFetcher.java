@@ -53,7 +53,7 @@ public final class CookiePriceFetcher {
             connection.setReadTimeout(8_000);
             connection.setInstanceFollowRedirects(false);
             connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("User-Agent", "Coins-to-Money/1.1.0");
+            connection.setRequestProperty("User-Agent", "Coins-to-Money/1.1.1");
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) throw new IOException("Bazaar HTTP " + connection.getResponseCode());
             try (InputStream input = connection.getInputStream()) {
                 byte[] body = input.readNBytes(MAX_BODY_BYTES + 1);

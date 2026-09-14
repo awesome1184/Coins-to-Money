@@ -12,11 +12,12 @@ import java.util.regex.Pattern;
 public final class CoinParser {
     private static final String NUMBER = "[+-]?(?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\\.[0-9]+)?[kKmMbBtTqQ]?";
     private static final Pattern VALID_NUMBER = Pattern.compile("^(" + NUMBER + ")$");
-    private static final Pattern COINS = Pattern.compile("(?<![\\w.,+-])(" + NUMBER + ")\\h*(?i:coins?)\\b");
+    private static final Pattern COINS = Pattern.compile("(?<![\\w.,+$<\u00a3\u20ac-])(" + NUMBER + ")\\h*(?i:coins?)\\b");
     private static final Pattern BALANCE = Pattern.compile("(?i)\\b(Purse|Piggy(?: Bank)?|Bank|Balance|Coins):\\h*(" + NUMBER + ")(?![\\w.,])");
     private static final Pattern PRICE = Pattern.compile("(?i)\\b(?:Buy price|Sell price|Price per unit|Price|Cost|Starting bid|Top bid|Your bid|BIN price|Buy it now):\\h*(" + NUMBER + ")(?![\\w.,])");
     private static final Pattern OTHER_CURRENCY = Pattern.compile("(?i)^\\h*(?:gems?|bits?|copper|motes?|tokens?|essence)\\b");
     private static final Pattern FORMATTING = Pattern.compile("(?i)§[0-9a-fk-orx]|\\p{Cf}");
+    private static final Pattern COOKIE_ANNOTATION = Pattern.compile("\\[[+-]?<?[0-9,.]+ cookies(?:[ |\\]]|$)");
     public record Amount(int start, int end, double coins, String source) { }
 
     private CoinParser() { }
@@ -74,5 +75,9 @@ public final class CoinParser {
     }
 
     public static boolean isBalance(String input) { return BALANCE.matcher(plain(input)).find(); }
-    public static boolean isAnnotated(String input) { return input.contains(" cookies | $") && input.contains(" USD"); }
+    public static boolean isAnnotated(String input) {
+        return input.contains(" cookies | $") || input.contains(" [$") || input.contains(" [<$")
+                || input.contains(" [-$") || input.contains(" [-<$")
+                || COOKIE_ANNOTATION.matcher(input).find();
+    }
 }

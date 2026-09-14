@@ -19,13 +19,24 @@ public record CoinConversion(double cookies, double usd) {
         return new CoinConversion(cookies, usd);
     }
 
-    public String display() { return cookieText(cookies) + " cookies | $" + moneyText(usd) + " USD"; }
-    private static String cookieText(double value) {
-        if (value != 0 && Math.abs(value) < .001d) return value < 0 ? "-<0.001" : "<0.001";
-        return String.format(Locale.US, "%,.3f", value == 0 ? 0d : value);
+    public String display() { return cookieText(3) + " | " + usdText(2); }
+    public String display(ModConfig config) {
+        if (config.showUsd && config.showCookies) return usdText(config.decimalPlaces) + " | " + cookieText(config.cookieDecimalPlaces);
+        if (config.showCookies) return cookieText(config.cookieDecimalPlaces);
+        return usdText(config.decimalPlaces);
     }
-    private static String moneyText(double value) {
-        if (value != 0 && Math.abs(value) < .01d) return value < 0 ? "-<0.01" : "<0.01";
-        return String.format(Locale.US, "%,.2f", value == 0 ? 0d : value);
+    public String cookieText(int precision) {
+        return number(cookies, Math.clamp(precision, 1, 6), "") + " cookies";
+    }
+    public String usdText(int precision) {
+        return number(usd, Math.clamp(precision, 2, 8), "$");
+    }
+    private static String number(double value, int precision, String unit) {
+        String sign = value < 0 ? "-" : "";
+        double minimum = Math.pow(10, -precision);
+        if (value != 0 && Math.abs(value) < minimum) {
+            return sign + "<" + unit + String.format(Locale.US, "%." + precision + "f", minimum).trim();
+        }
+        return sign + unit + String.format(Locale.US, "%,." + precision + "f", Math.abs(value));
     }
 }

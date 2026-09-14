@@ -22,31 +22,40 @@ jobs:
         with:
           gradle-version: '9.5.1'
       - name: Compile and regression tests
-        run: gradle clean build --no-daemon
-      - name: Inspect exact Minecraft rendering implementation
+        run: gradle clean build smokeClasses --no-daemon
+      - name: Install virtual display
+        run: sudo apt-get update -qq && sudo apt-get install -y xvfb libgl1-mesa-dri
+      - name: Actual sidebar and settings rendering tests
+        run: python3 ci/smoke_client.py
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+      - name: Verify distribution
         run: |
-          mkdir -p build/diagnostics
-          git archive HEAD -o build/diagnostics/repository.zip
           python3 - <<'PY'
           from pathlib import Path
-          import zipfile, subprocess
-          targets = ['net.minecraft.client.gui.Gui', 'net.minecraft.client.gui.Gui$1DisplayEntry', 'net.minecraft.client.gui.screens.Screen', 'net.minecraft.client.gui.GuiGraphicsExtractor', 'net.minecraft.client.renderer.state.gui.GuiRenderState', 'net.minecraft.world.scores.PlayerScoreEntry', 'net.minecraft.world.scores.Scoreboard', 'net.minecraft.world.scores.ScoreAccess', 'net.minecraft.world.scores.Objective', 'net.minecraft.network.chat.numbers.FixedFormat', 'net.minecraft.client.multiplayer.ClientPacketListener']
-          jars = list(Path('.gradle').rglob('*.jar')) + list((Path.home()/'.gradle/caches/fabric-loom').rglob('*.jar'))
-          for cls in targets:
-              for jar in jars:
-                  try:
-                      with zipfile.ZipFile(jar) as z:
-                          if cls.replace('.', '/')+'.class' not in z.namelist():
-                              continue
-                      data = subprocess.check_output(['javap', '-p', '-c', '-classpath', str(jar), cls], text=True)
-                      Path('build/diagnostics', cls+'.txt').write_text(data)
-                      break
-                  except zipfile.BadZipFile:
-                      pass
+          import hashlib, json, zipfile
+          for jar in Path('build/libs').glob('*.jar'):
+              if jar.name.endswith('-sources.jar'):
+                  continue
+              with zipfile.ZipFile(jar) as z:
+                  assert not any('SmokeTest' in name for name in z.namelist())
+                  assert json.loads(z.read('fabric.mod.json'))['id'] == 'coins-to-money'
+                  assert json.loads(z.read('coins-to-money.mixins.json'))['client'] == ['SidebarMixin']
+              digest = hashlib.sha256(jar.read_bytes()).hexdigest()
+              Path('build/SHA256SUMS').write_text(digest + '  ' + jar.name + '\n')
+              print(digest, jar.name)
           PY
-      - name: Upload diagnostic artifacts
+      - name: Upload mod and test evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coins-to-money-diagnostics-${{ github.sha }}
-          path: build/diagnostics/**
+          name: coins-to-money-${{ github.sha }}
+          path: |
+            build/libs/*.jar
+            build/reports/tests/test/**
+            build/test-results/test/*.xml
+            build/ci-client.log
+            build/smoke-run/logs/latest.log
+            build/smoke-run/crash-reports/*.txt
+            build/SHA256SUMS
+            !build/libs/*-sources.jar

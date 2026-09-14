@@ -1,21 +1,46 @@
 package com.example.skyblockusd;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.numbers.FixedFormat;
+import net.minecraft.network.chat.numbers.NumberFormat;
 import net.minecraft.world.scores.PlayerScoreEntry;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
+import java.util.regex.Pattern;
 
+/** Works on both DISPLAY columns, never guesses digits from the sorting score. */
 public final class ScoreboardCoinHelper {
+    private static final Pattern LABEL_ONLY = Pattern.compile("(?i)^\\h*(?:Purse|Piggy(?: Bank)?|Bank|Balance|Coins):\\h*$");
+    public record Row(Component name, Component value) { }
     private ScoreboardCoinHelper() { }
-    /** Match vanilla's visible prefix + name + suffix, without invoking our rendering hook. */
+
     public static Component rawName(Scoreboard board, PlayerScoreEntry entry) {
         PlayerTeam team = board.getPlayersTeam(entry.owner());
-        if (team == null) return entry.ownerName();
-        return Component.empty().append(team.getPlayerPrefix()).append(entry.ownerName()).append(team.getPlayerSuffix());
+        return PlayerTeam.formatNameForTeam(team, entry.ownerName());
     }
-    public static Component convertFullName(Component completeName) {
-        if (!SkyblockUsdModClient.inSkyblock() || !ModConfig.INSTANCE.enabled || !ModConfig.INSTANCE.enablePurse
-                || !CoinParser.isBalance(completeName.getString())) return completeName;
-        return CoinText.annotate(completeName, true, false);
+    public static Row convertRow(Component name, Component value, PlayerScoreEntry entry, NumberFormat fallback) {
+        NumberFormat format = entry.numberFormatOverride() == null ? fallback : entry.numberFormatOverride();
+        return convertRow(name, value, format instanceof FixedFormat, CookiePriceFetcher.state(),
+                System.currentTimeMillis(), ModConfig.INSTANCE);
+    }
+    static Row convertRow(Component name, Component value, boolean fixedValue,
+                          CookiePriceFetcher.State state, long now, ModConfig config) {
+        if (!config.enabled || !config.enablePurse || !state.available(now)) return new Row(name, value);
+        String left = CoinParser.plain(name.getString());
+        // FixedFormat contains server-provided text, not PlayerScoreEntry.value().
+        // Hypixel can put some or ALL of the purse in that separate right column.
+        if (fixedValue || LABEL_ONLY.matcher(left).matches()) {
+            Component combined = Component.empty().append(name).append(value);
+            String visible = combined.getString();
+            if (CoinParser.isBalance(visible) && CoinParser.find(visible, true, false).stream().anyMatch(a -> a.end() > left.length())) {
+                Component converted = CoinText.convert(combined, true, false, state, now, config);
+                if (converted != combined) return new Row(converted, Component.empty());
+            }
+        }
+        Component convertedName = CoinParser.isBalance(left) ? CoinText.convert(name, true, false, state, now, config) : name;
+        // Leave ordinary numeric ordering scores and all non-currency rows alone.
+        Component convertedValue = fixedValue && CoinParser.isBalance(value.getString())
+                ? CoinText.convert(value, true, false, state, now, config) : value;
+        return new Row(convertedName, convertedValue);
     }
 }

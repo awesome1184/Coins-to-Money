@@ -1,5 +1,5 @@
-"""Boot the real Fabric client under a virtual display and require our ready marker.
-This verifies entrypoints and mixin application, not a live Hypixel play session.
+"""Exercise actual transformed sidebar rows and 60 settings frames in a real Fabric client.
+Uses only synthetic fixtures; no Minecraft account or live Hypixel connection is required.
 """
 import os
 from pathlib import Path
@@ -10,26 +10,21 @@ import time
 log = Path('build/ci-client.log')
 log.parent.mkdir(exist_ok=True)
 with log.open('w') as output:
-    process = subprocess.Popen(['xvfb-run', '-a', 'gradle', 'runClient', '--no-daemon'], stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
-    passed = False
+    process = subprocess.Popen(['xvfb-run', '-a', 'gradle', 'runSmokeClient', '--no-daemon'],
+                               stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
     try:
-        deadline = time.monotonic() + 300
-        while time.monotonic() < deadline:
-            if 'CTM_CLIENT_READY' in log.read_text(errors='replace'):
-                passed = True
-                break
-            if process.poll() is not None:
-                break
-            time.sleep(1)
-    finally:
-        if process.poll() is None:
-            os.killpg(process.pid, signal.SIGTERM)
-            try:
-                process.wait(timeout=15)
-            except subprocess.TimeoutExpired:
-                os.killpg(process.pid, signal.SIGKILL)
-                process.wait()
-print(log.read_text(errors='replace')[-16000:])
-if not passed:
-    raise SystemExit('Real Fabric client did not reach the Coins to Money ready marker')
-print('PASS: real client entrypoints and team-name mixin loaded')
+        process.wait(timeout=360)
+    except subprocess.TimeoutExpired:
+        os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+        raise SystemExit('Client render tests timed out; see build/ci-client.log')
+text = log.read_text(errors='replace')
+print(text[-14000:])
+markers = ('CTM_ROW_TESTS_PASS', 'CTM_RENDER_TESTS_PASS')
+if process.returncode != 0 or any(marker not in text for marker in markers):
+    raise SystemExit('Actual sidebar/settings rendering regression failed')
+print('PASS: transformed vanilla rows, widths, saved settings and 60 real blur/sidebar frames')

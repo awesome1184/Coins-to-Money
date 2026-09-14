@@ -13,25 +13,33 @@ import java.nio.file.StandardCopyOption;
 
 public final class ModConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("coins-to-money.json");
+    private static Path configFile() { return FabricLoader.getInstance().getConfigDir().resolve("coins-to-money.json"); }
     public static ModConfig INSTANCE = new ModConfig();
-    public int schemaVersion = 2;
+    public int schemaVersion = 3;
     public boolean enabled = true;
     public boolean enablePurse = true;
     public boolean enableTooltips = true;
     public boolean enableChat = true;
-    public boolean showGui = true;
-    public int guiX = 8;
-    public int guiY = 8;
+    public boolean showUsd = true;
+    public boolean showCookies = false;
+    public boolean keepCoins = false;
+    public int decimalPlaces = 2;
+    public int cookieDecimalPlaces = 3;
+
+    public void normalize() {
+        schemaVersion = 3;
+        decimalPlaces = Math.clamp(decimalPlaces, 2, 8);
+        cookieDecimalPlaces = Math.clamp(cookieDecimalPlaces, 1, 6);
+        if (!showUsd && !showCookies && !keepCoins) showUsd = true;
+    }
 
     public static void load() {
+        Path FILE = configFile();
         if (!Files.isRegularFile(FILE)) return;
         try (Reader reader = Files.newBufferedReader(FILE, StandardCharsets.UTF_8)) {
             ModConfig loaded = GSON.fromJson(reader, ModConfig.class);
             if (loaded != null) INSTANCE = loaded;
-            INSTANCE.schemaVersion = 2;
-            INSTANCE.guiX = Math.max(0, INSTANCE.guiX);
-            INSTANCE.guiY = Math.max(0, INSTANCE.guiY);
+            INSTANCE.normalize();
             // Legacy exchange-rate fields cannot masquerade as a current Bazaar quote.
         } catch (IOException | RuntimeException ex) {
             INSTANCE = new ModConfig();
@@ -39,6 +47,8 @@ public final class ModConfig {
         }
     }
     public static void save() {
+        Path FILE = configFile();
+        INSTANCE.normalize();
         Path temporary = null;
         try {
             Files.createDirectories(FILE.getParent());
