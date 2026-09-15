@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 /** Convert the complete vanilla row before sidebar width/layout calculations. */
 @Mixin(Gui.class)
 public abstract class SidebarMixin {
-    @ModifyArgs(method = "lambda$displayScoreboardSidebar$1", at = @At(value = "INVOKE",
+    @ModifyArgs(method = "lambda$displayScoreboardSidebar$*", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/Gui$1DisplayEntry;<init>(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/Component;I)V"))
     private void coinsToMoney$completeRow(Args args, Scoreboard scoreboard, NumberFormat defaultFormat, PlayerScoreEntry entry) {
         SidebarDiagnostics.seen();
