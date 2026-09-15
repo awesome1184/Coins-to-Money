@@ -1,0 +1,35 @@
+name: Fix 1.2.5 smoke test
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.event.head_commit.message == 'Bump mod version to 1.2.5'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update stale version assertion
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/smoke/java/com/example/skyblockusd/ClientRenderSmokeTest.java')
+          s = p.read_text()
+          old = 'check("1.2.4", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());'
+          new = 'check("1.2.5", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());'
+          if old not in s:
+              raise SystemExit('stale assertion not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit fix and remove helper
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm .github/workflows/fix-125-smoke-test.yml
+          git add src/smoke/java/com/example/skyblockusd/ClientRenderSmokeTest.java .github/workflows/fix-125-smoke-test.yml
+          git commit -m 'Fix 1.2.5 smoke test version assertion'
+          git push
