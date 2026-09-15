@@ -121,7 +121,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
         board.addPlayerToTeam("§p", liveTeam);
         assertRow(client, board, new PlayerScoreEntry("§p", 5, null, BlankFormat.INSTANCE), fallback, "Purse: $1.78 (+5)", "");
         board.removePlayerTeam(liveTeam);
-        check("1.2.4", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
+        check("1.2.5", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
         SkyblockUsdMod.LOGGER.info("CTM_PURSE_DIAGNOSTIC_PASS: exact section-p row, all 7,416,701 coins, BlankFormat, rawScore=5 unchanged, gain suffix preserved");
         var team = board.addPlayerTeam("team"); team.setPlayerPrefix(Component.literal("Purse: "));
         board.addPlayerToTeam("fixture", team);
