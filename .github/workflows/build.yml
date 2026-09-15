@@ -1,5 +1,6 @@
 name: Build Minecraft Mod
 
+# Release verification trigger for 1.2.5.
 on:
   push:
   pull_request:
