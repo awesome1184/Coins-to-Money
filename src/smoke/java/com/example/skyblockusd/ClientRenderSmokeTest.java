@@ -14,7 +14,6 @@ import java.time.Duration;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.numbers.BlankFormat;
 import net.minecraft.network.chat.numbers.FixedFormat;
-import net.minecraft.network.chat.numbers.NumberFormat;
 import net.minecraft.network.chat.numbers.StyledFormat;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.PlayerScoreEntry;
@@ -26,7 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-/** Loads only in runSmokeClient. Real transformed Gui + real Screen rendering, no Hypixel login. */
+/** Loads only in runSmokeClient. Real transformed Hud + real Screen rendering, no Hypixel login. */
 public final class ClientRenderSmokeTest implements ClientModInitializer {
     private static final String LIVE_PURSE = "Purse: §67,416,7§p§601 §e(+5)";
     private static Method rowFactory;
@@ -37,7 +36,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
             if (started || client.gui.overlay() != null || client.gui.screen() == null) return;
             started = true;
             try {
-                rowFactory = Hud.class.getDeclaredMethod("lambda$displayScoreboardSidebar$1", Scoreboard.class, NumberFormat.class, PlayerScoreEntry.class);
+                rowFactory = Hud.class.getDeclaredMethod("lambda$displayScoreboardSidebar$1", Scoreboard.class, net.minecraft.network.chat.numbers.NumberFormat.class, PlayerScoreEntry.class);
                 rowFactory.setAccessible(true);
                 sidebarRenderer = Hud.class.getDeclaredMethod("displayScoreboardSidebar", GuiGraphicsExtractor.class, Objective.class);
                 sidebarRenderer.setAccessible(true);
@@ -82,13 +81,13 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
         if (!Objects.equals(expected, actual)) throw new AssertionError("Expected " + expected + ", got " + actual);
     }
     private static FixedFormat fixed(String value) { return new FixedFormat(Component.literal(value)); }
-    private static PlayerScoreEntry entry(String name, int sort, NumberFormat format) {
+    private static PlayerScoreEntry entry(String name, int sort, net.minecraft.network.chat.numbers.NumberFormat format) {
         return new PlayerScoreEntry("fixture", sort, Component.literal(name), format);
     }
-    private static void assertRow(Minecraft client, Scoreboard board, PlayerScoreEntry entry, NumberFormat fallback,
+    private static void assertRow(Minecraft client, Scoreboard board, PlayerScoreEntry entry, net.minecraft.network.chat.numbers.NumberFormat fallback,
                                   String expectedName, String expectedValue) throws Exception {
         int originalScore = entry.value();
-        Object row = rowFactory.invoke(client.hud, board, fallback, entry);
+        Object row = rowFactory.invoke(client.gui.hud, board, fallback, entry);
         Method name = row.getClass().getDeclaredMethod("name"), value = row.getClass().getDeclaredMethod("score"), width = row.getClass().getDeclaredMethod("scoreWidth");
         name.setAccessible(true); value.setAccessible(true); width.setAccessible(true);
         check(expectedName, ((Component) name.invoke(row)).getString());
@@ -201,7 +200,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
             check(frames + 1, backgrounds);
             try {
                 setStatic(SkyblockUsdModClient.class, "skyblock", true);
-                sidebarRenderer.invoke(minecraft.hud, graphics, objective);
+                sidebarRenderer.invoke(minecraft.gui.hud, graphics, objective);
             } catch (Exception ex) { throw new AssertionError("Actual sidebar render failed", ex); }
             IntegrationSmokeTest.render(graphics, frames);
             if (++frames == 60) {
