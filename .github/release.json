@@ -1,9 +1,9 @@
 {
-  "version": "1.2.5",
-  "commit": "8537e86136964ffa8f56954269c85ba32e374779",
-  "run_id": 34927148857,
-  "artifact_id": 10380059747,
-  "jar_sha256": "42805a072ad6d0c7a1e4fdd9e395ac4ffe6892e678ea01da949efc4b9203f558",
-  "artifact_sha256": "3589183a21602de1991d3c6c2f4b286c6cea106ac2e1cd9a518aefcbf077a3b5",
-  "notes": "## Minecraft 26.1.2 / 26.2 compatibility\nFixes the Minecraft 26.2 startup crash in SidebarMixin by removing the version-fragile Gui.getFont shadow and using the client font directly. The mod metadata supports Minecraft **26.1.2 through 26.2.x**. This release publishes the exact JAR from the successful CI build on the verified release commit.\n\n## Verification\nAll unit and integration checks in the selected build passed, including the actual Fabric client rendering smoke test and CustomScoreboard, SkyHanni, and combined integration tests. The selected artifact is the exact tested JAR, not a rebuild. Test fixtures are excluded from the published JAR. CI client tests target Minecraft 26.1.2; the 26.2-specific fix addresses the reported 26.2 startup crash, but CI does not run a separate authenticated 26.2 client.\n\n## Installation\nInstall **coins-to-money-1.2.5.jar** and remove older Coins to Money versions first. Existing settings are retained. CustomScoreboard, SkyHanni and Kotlin remain optional and are not bundled.\n\nRequires **Minecraft 26.1.2 through 26.2.x**, **Java 25**, **Fabric Loader 0.19.5+**, and **Fabric API 0.155.3+26.1.2**. Mod Menu is optional. **K** opens settings; **O** toggles conversion."
+  "version": "1.2.7",
+  "commit": "6741ba73ed6cc8003f9c7b12d257e74b6f49f7c5",
+  "run_id": 35073534023,
+  "artifact_id": 10436404463,
+  "jar_sha256": "9abf4bb48963daeb5f9cb69673eb35fc37bcbc6c00069be25e185e2648d3733c",
+  "artifact_sha256": "4ce258a79a1f3397fcdf6e957c1eb9c2d310508bc87ab57245e88ec52168089c",
+  "notes": "## Minecraft 26.2\nThis release ports the sidebar renderer, settings screens and team-colour handling to Minecraft 26.2, rather than just allowing the version in the mod metadata. Existing display settings, currency conversion and non-coin cost safeguards are retained.\n\nCustomScoreboard **1.12.14** and SkyHanni **7.57.0** integrations now use their **Minecraft 26.2 builds**. Install those mods with their usual dependencies when using them; they remain optional and are not bundled.\n\n## Documentation and credits\nThe README now focuses on installation, everyday use and how conversion works. The original creator's opening section and image are unchanged. Credits appear at the bottom of the README and in the mod metadata and Mod Menu details: **awesome1184 — original creator; veney — main developer**.\n\n## Installation\nRequires **Minecraft 26.2**, **Java 25**, **Fabric Loader 0.19.5 or newer**, and **Fabric API 0.160.0+26.2 or newer for 26.2**. Mod Menu is optional. Replace the previous JAR with **coins-to-money-1.2.7.jar**, keeping only one Coins to Money version installed. Saved settings carry over. Use an earlier release for Minecraft 26.1.2.\n\nThe published JAR is the exact artifact from the successful 26.2 build, with 207 passing unit tests and successful client checks with neither optional mod, each separately, and both together. These use synthetic inputs, not a logged-in Hypixel playtest. `SHA256SUMS` is included."
 }
