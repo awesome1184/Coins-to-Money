@@ -69,9 +69,3 @@ Currency rates are entered manually and saved locally; they do not update automa
 Both integrations activate automatically when the corresponding mod is installed. Use the **26.2 versions** of those mods and install their usual dependencies; neither mod is bundled with Coins to Money. The supported builds for this release are **CustomScoreboard 1.12.14** and **SkyHanni 7.57.0**.
 
 If a purse display remains unchanged, open settings and use **Copy purse diagnostics** when reporting the issue. This copies the displayed balances and relevant mod details to your clipboard; it does not upload anything.
-
-## Credits
-
-**awesome1184** — Original creator.
-
-**veney** — Main "developer" (we just used his chatgpt pro subscription to get it done lol)
