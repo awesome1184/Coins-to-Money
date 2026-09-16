@@ -74,4 +74,4 @@ If a purse display remains unchanged, open settings and use **Copy purse diagnos
 
 **awesome1184** — Original creator.
 
-**veney** — Main developer.
+**veney** — Main "developer" (we just used his chatgpt pro subscription to get it done lol)
