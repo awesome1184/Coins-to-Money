@@ -25,7 +25,10 @@ dependencies {
 }
 processResources {
     inputs.property 'version', project.version
-    filesMatching('fabric.mod.json') { expand 'version': project.version }
+    filesMatching('fabric.mod.json') {
+        // Keep JSON escapes intact while substituting the version.
+        expand(version: project.version) { escapeBackslash = true }
+    }
 }
 tasks.withType(JavaCompile).configureEach {
     options.release = 25
