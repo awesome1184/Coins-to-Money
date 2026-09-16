@@ -8,15 +8,12 @@ import java.util.Locale;
 
 public final class SkyblockContext {
     private SkyblockContext() { }
-    /** Same objective selection as Gui.extractScoreboardSidebar, including team-colour slots. */
+    /** Match Minecraft 26.2 Hud's optional team-colour sidebar selection. */
     public static Objective sidebar(Scoreboard board, String playerName) {
         var team = board.getPlayersTeam(playerName);
-        if (team != null) {
-            DisplaySlot slot = DisplaySlot.teamColorToSlot(team.getColor());
-            if (slot != null) {
-                Objective objective = board.getDisplayObjective(slot);
-                if (objective != null) return objective;
-            }
+        if (team != null && team.getColor().isPresent()) {
+            Objective objective = board.getDisplayObjective(team.getColor().get().displaySlot());
+            if (objective != null) return objective;
         }
         return board.getDisplayObjective(DisplaySlot.SIDEBAR);
     }

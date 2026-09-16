@@ -65,6 +65,6 @@ public class CurrencyConfigScreen extends Screen {
         var lines = font.split(Component.literal(message), width - 24);
         for (int i = 0; i < Math.min(2, lines.size()); i++) graphics.text(font, lines.get(i), 12, top + 83 + i * 9, error.isEmpty() ? 0xFF55FF55 : 0xFFFF5555, false);
     }
-    @Override public void onClose() { if (minecraft != null) minecraft.setScreen(parent); }
+    @Override public void onClose() { if (minecraft != null) minecraft.gui.setScreen(parent); }
     @Override public boolean isPauseScreen() { return false; }
 }

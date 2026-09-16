@@ -3,14 +3,54 @@
   "id": "coins-to-money",
   "version": "${version}",
   "name": "Coins to Money",
-  "description": "Replace SkyBlock coin prices with configurable money and cookie equivalents.",
+  "description": "Replace SkyBlock coin prices with configurable money and cookie equivalents.\n\nOriginal creator: awesome1184\nMain developer: veney",
   "environment": "client",
   "entrypoints": {
-    "main": ["com.example.skyblockusd.SkyblockUsdMod"],
-    "client": ["com.example.skyblockusd.SkyblockUsdModClient"],
-    "modmenu": ["com.example.skyblockusd.ModMenuIntegration"]
+    "main": [
+      "com.example.skyblockusd.SkyblockUsdMod"
+    ],
+    "client": [
+      "com.example.skyblockusd.SkyblockUsdModClient"
+    ],
+    "modmenu": [
+      "com.example.skyblockusd.ModMenuIntegration"
+    ]
   },
-  "mixins": ["coins-to-money.mixins.json"],
+  "mixins": [
+    "coins-to-money.mixins.json"
+  ],
   "icon": "assets/coins-to-money/icon.png",
-  "depends": { "fabricloader": ">=0.19.5", "fabric-api": ">=0.155.3+26.1.2", "minecraft": ">=26.1.2 <26.3", "java": ">=25" }
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": ">=0.160.0+26.2",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  },
+  "authors": [
+    {
+      "name": "awesome1184",
+      "contact": {
+        "homepage": "https://github.com/awesome1184"
+      }
+    },
+    {
+      "name": "veney",
+      "contact": {
+        "homepage": "https://github.com/Veneyo"
+      }
+    }
+  ],
+  "contact": {
+    "homepage": "https://github.com/awesome1184/Coins-to-Money",
+    "sources": "https://github.com/awesome1184/Coins-to-Money",
+    "issues": "https://github.com/awesome1184/Coins-to-Money/issues"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "Original creator: awesome1184": "https://github.com/awesome1184",
+        "Main developer: veney": "https://github.com/Veneyo"
+      }
+    }
+  }
 }

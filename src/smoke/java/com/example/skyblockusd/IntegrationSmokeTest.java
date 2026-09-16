@@ -35,7 +35,7 @@ final class IntegrationSmokeTest {
         ModConfig.INSTANCE = new ModConfig(); SkyHanniCompat.tick();
     }
     private static void custom(Minecraft mc) throws Exception {
-        eq("1.12.14-2", FabricLoader.getInstance().getModContainer("customscoreboard").orElseThrow().getMetadata().getVersion().getFriendlyString());
+        eq("1.12.14", FabricLoader.getInstance().getModContainer("customscoreboard").orElseThrow().getMetadata().getVersion().getFriendlyString());
         Class<?> profiles = Class.forName("tech.thatgravyboat.skyblockapi.api.profile.profile.ProfileAPI");
         Field profile = field(profiles, "profileName"); Object priorProfile = profile.get(null); profile.set(null, "ctm123-fixture");
         Object currency = instance("tech.thatgravyboat.skyblockapi.api.data.stored.CurrencyStorage");
@@ -109,13 +109,13 @@ final class IntegrationSmokeTest {
             expect(!unavailable.getString().contains("$"), "Unavailable quote fabricated a purse");
             state.set(null, saved);
             expect(CustomScoreboardCompat.numberChanges() > 0 && CustomScoreboardCompat.chunkCalls() > 0 && CustomScoreboardCompat.lineCalls() > 0, "Missing native adapter");
-            SkyblockUsdMod.LOGGER.info("CTM_CUSTOMSCOREBOARD_PASS: published 1.12.14-2, native scoreboard build, 3 locales x 2 number formats x 4 layouts, exact coins, gains, chunks, string overload, gates and widths");
+            SkyblockUsdMod.LOGGER.info("CTM_CUSTOMSCOREBOARD_PASS: published 1.12.14, native scoreboard build, 3 locales x 2 number formats x 4 layouts, exact coins, gains, chunks, string overload, gates and widths");
         } finally {
             Locale.setDefault(oldLocale); profile.set(null, priorProfile); context.set(null, oldContext); elements.set(null, priorElements); ctmContext.set(null, true); ModConfig.INSTANCE = new ModConfig();
         }
     }
     private static void hanni(Minecraft mc) throws Exception {
-        eq("7.56.0", FabricLoader.getInstance().getModContainer("skyhanni").orElseThrow().getMetadata().getVersion().getFriendlyString());
+        eq("7.57.0", FabricLoader.getInstance().getModContainer("skyhanni").orElseThrow().getMetadata().getVersion().getFriendlyString());
         SkyHanniCompat.tick();
         Object prices = instance(SH + "utils.ItemPriceUtils"); Method coin = method(prices.getClass(), "formatCoin", Number.class, boolean.class);
         eq("$2.95", CoinParser.plain((String)coin.invoke(prices, 12_295_597.2, false)));
@@ -162,7 +162,7 @@ final class IntegrationSmokeTest {
         checkHanni(mc, component, "Profit per hour: $2.95"); hanniWidgets.add(component);
         expect(SkyHanniCompat.scalarCalls() > 0 && SkyHanniCompat.cropCalls() > 0 && SkyHanniCompat.textChanges() > 0, "Missing SkyHanni hook");
         drawContext = instance(SH + "utils.compat.DrawContextUtils");
-        SkyblockUsdMod.LOGGER.info("CTM_SKYHANNI_PASS: published 7.56.0, actual chest builder, shared tracker total, crop-price lambda, signed profits, dynamic widths, currency/toggle changes, unchanged stats and source balances");
+        SkyblockUsdMod.LOGGER.info("CTM_SKYHANNI_PASS: published 7.57.0, actual chest builder, shared tracker total, crop-price lambda, signed profits, dynamic widths, currency/toggle changes, unchanged stats and source balances");
     }
     private static Object hanniText(String s) throws Exception { return hanni(s, String.class, "String"); }
     private static Object hanniComponent(Component s) throws Exception { return hanni(s, Component.class, "Text"); }

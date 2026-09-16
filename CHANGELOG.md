@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.7
+
+- Ported the sidebar, settings screens and team colours to Minecraft 26.2.
+- Updated Fabric API, Mod Menu and optional mod integrations for 26.2.
+- This build requires Minecraft 26.2; older game versions should use an earlier release.
+- Simplified the README while preserving the creator's opening section.
+- Added awesome1184 as original creator and veney as main developer in the README and mod metadata.
+
 ## 1.2.3
 
 - CustomScoreboard money and cookie values now use its read-only, unrounded purse API instead

@@ -3,7 +3,7 @@ package com.example.skyblockusd;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.Hud;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -34,18 +34,18 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
     private static boolean started;
     @Override public void onInitializeClient() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (started || client.getOverlay() != null || client.screen == null) return;
+            if (started || client.gui.overlay() != null || client.gui.screen() == null) return;
             started = true;
             try {
-                rowFactory = Gui.class.getDeclaredMethod("lambda$displayScoreboardSidebar$1", Scoreboard.class, NumberFormat.class, PlayerScoreEntry.class);
+                rowFactory = Hud.class.getDeclaredMethod("lambda$displayScoreboardSidebar$1", Scoreboard.class, NumberFormat.class, PlayerScoreEntry.class);
                 rowFactory.setAccessible(true);
-                sidebarRenderer = Gui.class.getDeclaredMethod("displayScoreboardSidebar", GuiGraphicsExtractor.class, Objective.class);
+                sidebarRenderer = Hud.class.getDeclaredMethod("displayScoreboardSidebar", GuiGraphicsExtractor.class, Objective.class);
                 sidebarRenderer.setAccessible(true);
                 seed();
                 rows(client);
                 IntegrationSmokeTest.run(client);
                 var screen = new RenderScreen();
-                client.setScreen(screen);
+                client.gui.setScreen(screen);
                 click(screen, "Show cookies:"); check(true, ModConfig.INSTANCE.showCookies);
                 click(screen, "Show money:"); check(false, ModConfig.INSTANCE.showUsd);
                 click(screen, "Keep coins:"); check(true, ModConfig.INSTANCE.keepCoins);
@@ -55,7 +55,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
                 assertTooltips(screen);
                 screen.resize(320, 240); assertBounds(screen);
                 click(screen, "Currency:");
-                Screen currency = client.screen;
+                Screen currency = client.gui.screen();
                 assertTooltips(currency); currency.resize(320, 240); assertBounds(currency);
                 edit(currency, "Currency code", "EUR"); edit(currency, "Target currency per 1 USD", "0");
                 check(false, button(currency, "Apply").active);
@@ -64,7 +64,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
                 check("EUR", ModConfig.INSTANCE.currencyCode); check(.92d, ModConfig.INSTANCE.currencyPerUsd);
                 ModConfig.load(); check("EUR", ModConfig.INSTANCE.currencyCode); check(.92d, ModConfig.INSTANCE.currencyPerUsd);
                 seed(); ModConfig.save();
-                client.setScreen(new RenderScreen());
+                client.gui.setScreen(new RenderScreen());
                 SkyblockUsdMod.LOGGER.info("CTM_ROW_TESTS_PASS: real vanilla row constructor, fixed formats, widths, toggles and saved settings");
             } catch (Throwable ex) { throw new AssertionError("CTM_RENDER_TEST_FAILURE", ex); }
         });
@@ -88,7 +88,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
     private static void assertRow(Minecraft client, Scoreboard board, PlayerScoreEntry entry, NumberFormat fallback,
                                   String expectedName, String expectedValue) throws Exception {
         int originalScore = entry.value();
-        Object row = rowFactory.invoke(client.gui, board, fallback, entry);
+        Object row = rowFactory.invoke(client.hud, board, fallback, entry);
         Method name = row.getClass().getDeclaredMethod("name"), value = row.getClass().getDeclaredMethod("score"), width = row.getClass().getDeclaredMethod("scoreWidth");
         name.setAccessible(true); value.setAccessible(true); width.setAccessible(true);
         check(expectedName, ((Component) name.invoke(row)).getString());
@@ -121,7 +121,7 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
         board.addPlayerToTeam("§p", liveTeam);
         assertRow(client, board, new PlayerScoreEntry("§p", 5, null, BlankFormat.INSTANCE), fallback, "Purse: $1.78 (+5)", "");
         board.removePlayerTeam(liveTeam);
-        check("1.2.6", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
+        check("1.2.7", com.google.gson.JsonParser.parseString(SidebarDiagnostics.report(client)).getAsJsonObject().get("version").getAsString());
         SkyblockUsdMod.LOGGER.info("CTM_PURSE_DIAGNOSTIC_PASS: exact section-p row, all 7,416,701 coins, BlankFormat, rawScore=5 unchanged, gain suffix preserved");
         var team = board.addPlayerTeam("team"); team.setPlayerPrefix(Component.literal("Purse: "));
         board.addPlayerToTeam("fixture", team);
@@ -201,12 +201,12 @@ public final class ClientRenderSmokeTest implements ClientModInitializer {
             check(frames + 1, backgrounds);
             try {
                 setStatic(SkyblockUsdModClient.class, "skyblock", true);
-                sidebarRenderer.invoke(minecraft.gui, graphics, objective);
+                sidebarRenderer.invoke(minecraft.hud, graphics, objective);
             } catch (Exception ex) { throw new AssertionError("Actual sidebar render failed", ex); }
             IntegrationSmokeTest.render(graphics, frames);
             if (++frames == 60) {
                 SkyblockUsdMod.LOGGER.info("CTM_SETTINGS_FRAMES_PASS: 60 settings/tooltip/blur/live section-p and StyledFormat sidebar frames");
-                minecraft.setScreen(new CurrencyRenderScreen());
+                minecraft.gui.setScreen(new CurrencyRenderScreen());
             }
         }
     }

@@ -55,7 +55,8 @@ public final class CustomScoreboardCompat {
             if (!style.equals(previous[0])) {
                 result.append(ChatFormatting.RESET);
                 if (style.getColor() != null) for (ChatFormatting colour : ChatFormatting.values()) {
-                    if (colour.isColor() && colour.getColor().intValue() == style.getColor().getValue()) {
+                    var rgb = Style.EMPTY.applyFormat(colour).getColor();
+                    if (rgb != null && rgb.getValue() == style.getColor().getValue()) {
                         result.append(colour); break;
                     }
                 }

@@ -11,7 +11,7 @@ public final class FinalIntegrationSmokeTest implements ClientModInitializer {
     @Override public void onInitializeClient() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (done || !FabricLoader.getInstance().isModLoaded("skyhanni")
-                    || !(client.screen instanceof CoinsToMoneyConfigScreen)) return;
+                    || !(client.gui.screen() instanceof CoinsToMoneyConfigScreen)) return;
             done = true;
             ModConfig saved = ModConfig.INSTANCE;
             try {

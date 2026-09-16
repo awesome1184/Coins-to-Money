@@ -52,8 +52,8 @@ class DisplayAndCurrencyTest {
         c.currencyCode = "EUR"; c.currencyPerUsd = 0.92; c.displayOrder = DisplayOrder.MONEY_COINS_COOKIES;
         var result = convert("Cost: 12,295,597.2 coins", c);
         result.visit((style, text) -> {
-            if (text.contains("€") || text.contains("cookies")) assertEquals(ChatFormatting.GREEN.getColor(), style.getColor().getValue());
-            if (text.contains("12,295,597.2 coins")) assertEquals(ChatFormatting.GOLD.getColor(), style.getColor().getValue());
+            if (text.contains("€") || text.contains("cookies")) assertEquals(0x55FF55, style.getColor().getValue());
+            if (text.contains("12,295,597.2 coins")) assertEquals(0xFFAA00, style.getColor().getValue());
             return Optional.empty();
         }, Style.EMPTY);
         assertEquals("Cost: €2.72 [12,295,597.2 coins | 1.000 cookies]", result.getString());

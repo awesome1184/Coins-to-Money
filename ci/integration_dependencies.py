@@ -5,7 +5,7 @@ from urllib.request import Request, urlopen
 for d in json.loads(Path('ci/integration-lock.json').read_text()):
     if not d['url'].startswith('https://cdn.modrinth.com/') or Path(d['filename']).name != d['filename']:
         raise SystemExit('Unexpected dependency URL/path')
-    with urlopen(Request(d['url'], headers={'User-Agent':'CoinsToMoney-integration-tests/1.2.3'}), timeout=90) as response:
+    with urlopen(Request(d['url'], headers={'User-Agent':'CoinsToMoney-integration-tests/1.2.7'}), timeout=90) as response:
         data = response.read(64 * 1024 * 1024 + 1)
     if len(data) > 64 * 1024 * 1024 or hashlib.sha512(data).hexdigest() != d['sha512']:
         raise SystemExit('Dependency size/hash mismatch: ' + d['filename'])

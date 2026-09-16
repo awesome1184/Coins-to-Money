@@ -29,7 +29,7 @@ class CoinTextTest {
         assertEquals("Purse: 7,416,611 (+56)", raw.getString());
         var colors = new ArrayList<Integer>();
         result.visit((style, s) -> { if (s.contains("$")) colors.add(style.getColor().getValue()); return Optional.empty(); }, Style.EMPTY);
-        assertEquals(ChatFormatting.GREEN.getColor(), colors.getFirst());
+        assertEquals(0x55FF55, colors.getFirst());
         assertSame(result, convert(result, new ModConfig()));
     }
     @Test void legacyCodesAndInvisibleCharactersDoNotCorruptOffsets() {

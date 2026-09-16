@@ -62,9 +62,9 @@ class PurseFormattingRegressionTest {
         Component result = row(input, config).name();
         assertEquals("Purse: 7,416,701 [$1.78 | 0.603 cookies] (+5)", result.getString());
         result.visit((style, text) -> {
-            if (text.contains("$1.78") || text.contains("cookies")) assertEquals(ChatFormatting.GREEN.getColor(), style.getColor().getValue());
-            if (text.contains("7,416,701")) assertEquals(ChatFormatting.GOLD.getColor(), style.getColor().getValue());
-            if (text.contains("(+5)")) assertEquals(ChatFormatting.YELLOW.getColor(), style.getColor().getValue());
+            if (text.contains("$1.78") || text.contains("cookies")) assertEquals(0x55FF55, style.getColor().getValue());
+            if (text.contains("7,416,701")) assertEquals(0xFFAA00, style.getColor().getValue());
+            if (text.contains("(+5)")) assertEquals(0xFFFF55, style.getColor().getValue());
             return Optional.empty();
         }, Style.EMPTY);
         assertEquals(RAW, input.getString());

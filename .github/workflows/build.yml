@@ -1,6 +1,6 @@
 name: Build Minecraft Mod
 
-# Release verification trigger for 1.2.5.
+# Minecraft 26.2 build and optional-mod integration checks.
 on:
   push:
   pull_request:
@@ -57,7 +57,14 @@ jobs:
                   continue
               with zipfile.ZipFile(jar) as z:
                   assert not any('SmokeTest' in name for name in z.namelist())
-                  assert json.loads(z.read('fabric.mod.json'))['id'] == 'coins-to-money'
+                  metadata = json.loads(z.read('fabric.mod.json'))
+                  assert metadata['id'] == 'coins-to-money'
+                  assert metadata['version'] == '1.2.7'
+                  assert metadata['depends']['minecraft'] == '~26.2'
+                  assert [author['name'] for author in metadata['authors']] == ['awesome1184', 'veney']
+                  assert 'Original creator: awesome1184' in metadata['description']
+                  assert 'Main developer: veney' in metadata['description']
+                  assert metadata['icon'] in z.namelist()
                   assert json.loads(z.read('coins-to-money.mixins.json'))['client'] == ['SidebarMixin', 'CustomScoreboardNumberMixin', 'CustomScoreboardLineMixin', 'CustomScoreboardChunkMixin', 'SkyHanniCoinMixin', 'SkyHanniCropMixin', 'SkyHanniStringMixin', 'SkyHanniTextMixin']
                   assert not any(name.startswith(('kotlin/', 'me/owdding/', 'at/hannibal2/')) for name in z.namelist())
               digest = hashlib.sha256(jar.read_bytes()).hexdigest()
